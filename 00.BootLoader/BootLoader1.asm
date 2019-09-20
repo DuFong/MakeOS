@@ -92,20 +92,20 @@ GETTODAY:
 ;==================== calculate week ======================
 	; add year days / year in bx (2019)
     sub bx, 1		
-    call GET_REAP_CNT       ; reap cnt from 1 to (year-1)
-    mov word[REAPCNT], cx
+    call GET_LEAP_CNT       ; leap cnt from 1 to (year-1)
+    mov word[LEAPCNT], cx
     mov di, cx
     
 	add bx, 1
-    call GET_REAP_CNT       ; reap cnt from 1 to (year)
-    mov word[REAPCNT2], cx
+    call GET_LEAP_CNT       ; leap cnt from 1 to (year)
+    mov word[LEAPCNT2], cx
 
-    sub di, 460             ; reap cnt from 1900 to (year-1)
+    sub di, 460             ; leap cnt from 1900 to (year-1)
 
     sub bx, 1900            ; year cnt ?
     imul bx, bx, 0x16D      ; year cnt*365
 
-    add bx, di              ; year cnt*365 + reap cnt
+    add bx, di              ; year cnt*365 + leap cnt
 
     ; add month days
 	xor cx, cx
@@ -123,17 +123,17 @@ GETTODAY:
 
     add bx, [monthsum+ecx]
 
-    mov ax, word[REAPCNT2]
-    mov cx, word[REAPCNT]     	   ; year년과 (year-1)년 윤년수 비교
+    mov ax, word[LEAPCNT2]
+    mov cx, word[LEAPCNT]     	   ; year년과 (year-1)년 윤년수 비교
     sub ax, cx             
     test ax, ax
 
-    jz .NOTREAPYEAR
+    jz .NOTLEAPYEAR
     cmp si, 3
-    js .NOTREAPYEAR
+    js .NOTLEAPYEAR
     inc bx 
 
-.NOTREAPYEAR:
+.NOTLEAPYEAR:
 
 	; add days
     xor cx, cx
@@ -228,7 +228,7 @@ HANDLEDISKERROR:
 	jmp $
 
 ;====================================
-GET_REAP_CNT:
+GET_LEAP_CNT:
 	;bx에 년도 들어옴 / cx에 윤년수 구한거 저장
     mov cx, bx
     shr cx, 2
@@ -252,8 +252,8 @@ GET_REAP_CNT:
 DATEMESSAGE:		db '00/00/0000', 0	
 DISKERRORMESSAGE:	db 'DISK Error', 0
 
-REAPCNT:                dw  0x00
-REAPCNT2:               dw  0x00
+LEAPCNT:                dw  0x00
+LEAPCNT2:               dw  0x00
 monthsum DW 0,31,59,90,120,151,181,212,243,273,304,334
 WEEK:    db  'SUNMONTUEWEDTHUFRISAT', 0
 
