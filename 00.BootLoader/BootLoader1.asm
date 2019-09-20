@@ -94,7 +94,6 @@ GETTODAY:
 	; mov byte [es:di], bl
 	;;;;;;;;;;;;;;;;;;;;;;;;
 
-	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; add code
 ;================= calculate week ===================
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; year in bx (2019)
 	;mov bx, 2019
@@ -115,12 +114,22 @@ GETTODAY:
     imul bx, bx, 0x16D
 
     add bx, di   ;bx=43464(# of days from 1900 to 2018)
-    mov word[TOTALDAYS], bx ;totaldays = 43464
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; add month days
-    mov bx, word[TOTALDAYS] ;;test
-	
-	mov cx, 9    			; month   
+	  			
+	;month   
+	xor cx, cx
+	mov al, byte[DATEMESSAGE + 3]
+	sub al, 0x30
+	mov di, 10
+	mul di
+	mov cl, byte[DATEMESSAGE + 4]
+	sub cl, 0x30
+	add cl, al						; cl: month
+
+	; add cl, 40
+	; mov byte [es:420], cl
+
     mov si, cx
     dec cx
     shl cx, 1
@@ -128,7 +137,7 @@ GETTODAY:
     add bx, [monthsum+ecx]
 
     mov ax, word[REAPCNT2]
-    mov cx, word[REAPCNT]        ;x년과 (x-1)년 윤년수 비교
+    mov cx, word[REAPCNT]     	   ;x년과 (x-1)년 윤년수 비교
 
     sub ax, cx             
     test ax, ax
@@ -140,7 +149,19 @@ GETTODAY:
 
 .NOTREAPYEAR:
 
-    add bx, 22   			; day
+	; day
+	mov al, byte[DATEMESSAGE + 0]
+	sub al, 0x30
+	mov di, 10
+	mul di
+	mov cl, byte[DATEMESSAGE + 1]
+	sub cl, 0x30
+	add cl, al						; cl: date
+
+	; add cl, 40
+	; mov byte [es:420], cl
+
+    add bx, 20
     xor dx, dx
     mov ax, bx ;mov ax, word[TOTALDAYS]
 
@@ -249,7 +270,6 @@ DATEMESSAGE:		db '00/00/0000', 0
 DISKERRORMESSAGE:	db 'DISK Error', 0
 
 REAPCNT:                dw  0x00
-TOTALDAYS:              dw  0x00
 REAPCNT2:               dw  0x00
 monthsum DW 0,31,59,90,120,151,181,212,243,273,304,334
 WEEK:    db  'SUNMONTUEWEDTHUFRISAT', 0
