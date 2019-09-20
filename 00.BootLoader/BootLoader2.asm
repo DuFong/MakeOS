@@ -32,47 +32,47 @@ START:
 	call PRINTMESSAGE
 	add sp, 6
 
-	mov di, 186
+	; mov di, 186
 
-	GETDATE:
-		mov ah, 0x04
-		int 0x1A
+	; GETDATE:
+	; 	mov ah, 0x04
+	; 	int 0x1A
 
-		mov bx, dx
-		shl bx, 8
-		call PRINTDATE
+	; 	mov bx, dx
+	; 	shl bx, 8
+	; 	call PRINTDATE
 
-		mov bx, dx
-		shl bx, 12
-		call PRINTDATE
+	; 	mov bx, dx
+	; 	shl bx, 12
+	; 	call PRINTDATE
 
-		add di, 2
-		mov byte [es:di], 0x2F
+	; 	add di, 2
+	; 	mov byte [es:di], 0x2F
 
-		mov bx, dx
-		call PRINTDATE
+	; 	mov bx, dx
+	; 	call PRINTDATE
 
-		mov bx, dx
-		shl bx, 4
-		call PRINTDATE
+	; 	mov bx, dx
+	; 	shl bx, 4
+	; 	call PRINTDATE
 
-		add di, 2
-		mov byte [es:di], 0x2F
+	; 	add di, 2
+	; 	mov byte [es:di], 0x2F
 
-		mov bx, cx
-		call PRINTDATE
+	; 	mov bx, cx
+	; 	call PRINTDATE
 
-		mov bx, cx
-		shl bx, 4
-		call PRINTDATE
+	; 	mov bx, cx
+	; 	shl bx, 4
+	; 	call PRINTDATE
 
-		mov bx, cx
-		shl bx, 8
-		call PRINTDATE
+	; 	mov bx, cx
+	; 	shl bx, 8
+	; 	call PRINTDATE
 
-		mov bx, cx
-		shl bx, 12
-		call PRINTDATE
+	; 	mov bx, cx
+	; 	shl bx, 12
+	; 	call PRINTDATE
 
 
 
@@ -153,7 +153,6 @@ PRINTMESSAGE:
 	push di
 	push ax
 	push cx
-	;push dx
 	
 	; set segment register video mode address
 	mov ax, 0xB800
@@ -187,7 +186,6 @@ PRINTMESSAGE:
 		jmp .MESSAGELOOP
 
 	.MESSAGEEND:
-	;	pop dx
 		pop cx
 		pop ax
 		pop di
@@ -204,28 +202,29 @@ HANDLEDISKERROR:
 
 	jmp $
 
-PRINTDATE:
-	push bp
-	mov bp, sp
+; PRINTDATE:
+; 	push bp
+; 	mov bp, sp
 
-	shr bx, 12
-	add bx, 30H
-	add di, 2
-	mov byte [es:di], bl
+; 	shr bx, 12
+; 	add bx, 30H
+; 	add di, 2
+; 	mov byte [es:di], bl
 	
-	pop bp
-	ret
+; 	pop bp
+; 	ret
 
 
 
-MESSAGE1:    db 'MINT64 OS Boot Loader Start~!!', 0
-MESSAGE2:    db 'Current Date:' , 0
-IMAGELOADINGMESSAGE: db 'OS Image Loading...', 0
-DISKERRORMESSAGE:	 db 'DISK Error',0
-LOADINGCOMPLETEMESSAGE: db 'Complete~!!', 0
-SECTORNUMBER:	db 0x03
-HEADNUMBER: 	db 0x00
-TRACKNUMBER: 	db 0x00
+MESSAGE1:					db 'MINT64 OS Boot Loader Start~!!', 0
+MESSAGE2:					db 'Current Date:' , 0
+IMAGELOADINGMESSAGE: 		db 'OS Image Loading...', 0
+DISKERRORMESSAGE:	 		db 'DISK Error',0
+LOADINGCOMPLETEMESSAGE: 	db 'Complete~!!', 0
+
+SECTORNUMBER:				db 0x03
+HEADNUMBER: 				db 0x00
+TRACKNUMBER: 				db 0x00
 
 times 510 - ( $ - $$ )    db    0x00
 

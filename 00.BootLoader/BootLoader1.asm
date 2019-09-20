@@ -30,40 +30,68 @@ START:
     jl .SCREENCLEARLOOP
 
 ; Print date of the week
-PRINTDAY:
-    ; bios interrupt service
+GETTODAY:
+	; bios interrupt service
     mov ah, 0x04
     int 0x1A
 
-	xor ax, ax
+    ; date
+    mov al, dl
+    shr al, 4
+    add al, 0x30
+    mov [DATEMESSAGE+0], al
+    mov al, dl
+    and al, 0x0F
+    add al, 0x30
+    mov [DATEMESSAGE + 1], al
 
-    ; get year
+    ; month
+    mov al, dh
+    shr al, 4
+    add al, 0x30
+    mov [DATEMESSAGE + 3], al
+    mov al, dh
+    and al, 0x0F
+    add al, 0x30
+    mov [DATEMESSAGE + 4], al
+
+    xor ax, ax
+
+    ; year
     mov al, ch
     shr al, 4                   ; 2
     mov si, 1000
     mul si                      ; ax = 2 x 1000
     mov bx, ax                  ; bx = 2000
-
+    div si
+    add al, 0x30
+    mov [DATEMESSAGE + 6], al   
     mov al, ch
     and al, 0x0F                ; 0
     mov si, 100
     mul si                      ; ax = 0 x 100
     add bx, ax                  ; bx = 2000 + 000
- 
+    div si
+    add al, 0x30
+    mov [DATEMESSAGE + 7], al   
     mov al, cl
     shr al, 4                   ; 1
     mov si, 10
     mul si                      ; ax = 1 x 10
     add bx, ax                  ; bx = 2000 + 000 + 10
-  
+    div si
+    add al, 0x30
+    mov [DATEMESSAGE + 8], al   
     mov al, cl
     and al, 0x0F                ; 9
     add bx, ax                  ; bx = 2019
+    add al, 0x30
+    mov [DATEMESSAGE + 9], al
 
 	;;;;;;;;;;;;;;;; test for printing
-	sub bx, 1970
-	mov di, 210
-	mov byte [es:di], bl
+	; sub bx, 1970
+	; mov di, 210
+	; mov byte [es:di], bl
 	;;;;;;;;;;;;;;;;;;;;;;;;
 
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; add code
@@ -72,6 +100,19 @@ PRINTDAY:
     mov si, 365
     mul si                      ; ax = 119 x 365	
 
+; print today date
+	xor si, si
+	mov di, 188
+PRINTDAY:
+	mov cl, byte [DATEMESSAGE + si]
+	test cl, cl
+	je RESETDISK
+
+	mov byte [ es: di ], cl
+	add si, 1
+	add di, 2
+
+	jmp PRINTDAY
 
 
 RESETDISK:
@@ -118,12 +159,10 @@ HANDLEDISKERROR:
 
 
 
-DISKERRORMESSAGE:	 db 'DISK Error',0
+DATEMESSAGE:		db '00/00/0000', 0	
+DISKERRORMESSAGE:	db 'DISK Error', 0
 
 times 510 - ( $ - $$ ) db 0x00
 
 db 0x55
 db 0xAA
-
-
-
