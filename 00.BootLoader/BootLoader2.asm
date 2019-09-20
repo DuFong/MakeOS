@@ -32,50 +32,6 @@ START:
 	call PRINTMESSAGE
 	add sp, 6
 
-	; mov di, 186
-
-	; GETDATE:
-	; 	mov ah, 0x04
-	; 	int 0x1A
-
-	; 	mov bx, dx
-	; 	shl bx, 8
-	; 	call PRINTDATE
-
-	; 	mov bx, dx
-	; 	shl bx, 12
-	; 	call PRINTDATE
-
-	; 	add di, 2
-	; 	mov byte [es:di], 0x2F
-
-	; 	mov bx, dx
-	; 	call PRINTDATE
-
-	; 	mov bx, dx
-	; 	shl bx, 4
-	; 	call PRINTDATE
-
-	; 	add di, 2
-	; 	mov byte [es:di], 0x2F
-
-	; 	mov bx, cx
-	; 	call PRINTDATE
-
-	; 	mov bx, cx
-	; 	shl bx, 4
-	; 	call PRINTDATE
-
-	; 	mov bx, cx
-	; 	shl bx, 8
-	; 	call PRINTDATE
-
-	; 	mov bx, cx
-	; 	shl bx, 12
-	; 	call PRINTDATE
-
-
-
 	; print OS Image Loading
 	push IMAGELOADINGMESSAGE
 	push 2
@@ -143,7 +99,6 @@ READEND:
 	; virtual OS image execute
 	jmp 0x1020:0x0000
 
-
 PRINTMESSAGE:
 	push bp
 	mov bp, sp						; access parameter by bp(base pointer register)
@@ -201,20 +156,6 @@ HANDLEDISKERROR:
 	call PRINTMESSAGE
 
 	jmp $
-
-; PRINTDATE:
-; 	push bp
-; 	mov bp, sp
-
-; 	shr bx, 12
-; 	add bx, 30H
-; 	add di, 2
-; 	mov byte [es:di], bl
-	
-; 	pop bp
-; 	ret
-
-
 
 MESSAGE1:					db 'MINT64 OS Boot Loader Start~!!', 0
 MESSAGE2:					db 'Current Date:' , 0

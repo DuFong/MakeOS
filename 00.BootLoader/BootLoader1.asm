@@ -95,6 +95,11 @@ GETTODAY:
 	;;;;;;;;;;;;;;;;;;;;;;;;
 
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; add code
+	shr bx, 7
+	add bx, 82
+	mov di, 210
+	mov byte [es:di], bl
+
     mov ax, bx                  ; bx = 2019
     sub ax, 1900                ; ax = 2019 - 1900 = 119
     mov si, 365
