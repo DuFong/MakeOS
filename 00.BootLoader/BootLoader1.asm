@@ -88,36 +88,26 @@ GETTODAY:
     add al, 0x30
     mov [DATEMESSAGE + 9], al
 
-	;;;;;;;;;;;;;;;; test for printing
-	; sub bx, 1970
-	; mov di, 210
-	; mov byte [es:di], bl
-	;;;;;;;;;;;;;;;;;;;;;;;;
 
-;================= calculate week ===================
-	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; year in bx (2019)
-	;mov bx, 2019
-
-    sub bx, 1		;2018 in bx
-    call GET_REAP_CNT       ;cx = 489
+;==================== calculate week ======================
+	; add year days / year in bx (2019)
+    sub bx, 1		
+    call GET_REAP_CNT       ; reap cnt from 1 to (year-1)
     mov word[REAPCNT], cx
     mov di, cx
     
-	add bx, 1		; 2019 in bx
-    call GET_REAP_CNT
+	add bx, 1
+    call GET_REAP_CNT       ; reap cnt from 1 to (year)
     mov word[REAPCNT2], cx
 
-    sub di, 460
+    sub di, 460             ; reap cnt from 1900 to (year-1)
 
-    ;inc bx              
-    sub bx, 1900
-    imul bx, bx, 0x16D
+    sub bx, 1900            ; year cnt ?
+    imul bx, bx, 0x16D      ; year cnt*365
 
-    add bx, di   ;bx=43464(# of days from 1900 to 2018)
+    add bx, di              ; year cnt*365 + reap cnt
 
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; add month days
-	  			
-	;month   
+    ; add month days
 	xor cx, cx
 	mov al, byte[DATEMESSAGE + 3]
 	sub al, 0x30
@@ -125,10 +115,7 @@ GETTODAY:
 	mul di
 	mov cl, byte[DATEMESSAGE + 4]
 	sub cl, 0x30
-	add cl, al						; cl: month
-
-	; add cl, 40
-	; mov byte [es:420], cl
+	add cl, al			    ; month in cl
 
     mov si, cx
     dec cx
@@ -137,39 +124,36 @@ GETTODAY:
     add bx, [monthsum+ecx]
 
     mov ax, word[REAPCNT2]
-    mov cx, word[REAPCNT]     	   ;x년과 (x-1)년 윤년수 비교
-
+    mov cx, word[REAPCNT]     	   ; year년과 (year-1)년 윤년수 비교
     sub ax, cx             
     test ax, ax
 
     jz .NOTREAPYEAR
     cmp si, 3
     js .NOTREAPYEAR
-    inc bx ;inc word[TOTALDAYS]
+    inc bx 
 
 .NOTREAPYEAR:
 
-	; day
+	; add days
+    xor cx, cx
 	mov al, byte[DATEMESSAGE + 0]
 	sub al, 0x30
 	mov di, 10
 	mul di
 	mov cl, byte[DATEMESSAGE + 1]
 	sub cl, 0x30
-	add cl, al						; cl: date
+	add cl, al				; date in cl
 
-	; add cl, 40
-	; mov byte [es:420], cl
-
-    add bx, 20
+    add bx, cx
     xor dx, dx
-    mov ax, bx ;mov ax, word[TOTALDAYS]
+    mov ax, bx 
 
     mov cx, 7
-    div cx      ;remainder in dx
+    div cx                  ; remainder(%7) in dx
 
 
-    ;print week
+    ; print week string
     mov ax, dx
     mov bx, 3
     mul bx
@@ -184,7 +168,7 @@ GETTODAY:
     mov cl, byte[WEEK+di]
     mov byte [ es: 214 ], cl
 
-;=====================================================
+;=========================================================
 
 ; print today date
 	xor si, si
@@ -259,11 +243,10 @@ GET_REAP_CNT:
     mov si, 400
     xor dx, dx
     div si
-    add cx, ax    ; cx = 489
+    add cx, ax 
     ret
 
 ;===================================
-
 
 
 DATEMESSAGE:		db '00/00/0000', 0	
