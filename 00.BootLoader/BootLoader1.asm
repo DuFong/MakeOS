@@ -95,15 +95,75 @@ GETTODAY:
 	;;;;;;;;;;;;;;;;;;;;;;;;
 
 	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; add code
-	shr bx, 7
-	add bx, 82
-	mov di, 210
-	mov byte [es:di], bl
+;================= calculate week ===================
+	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; year in bx (2019)
+	;mov bx, 2019
 
-    mov ax, bx                  ; bx = 2019
-    sub ax, 1900                ; ax = 2019 - 1900 = 119
-    mov si, 365
-    mul si                      ; ax = 119 x 365	
+    sub bx, 1		;2018 in bx
+    call GET_REAP_CNT       ;cx = 489
+    mov word[REAPCNT], cx
+    mov di, cx
+    
+	add bx, 1		; 2019 in bx
+    call GET_REAP_CNT
+    mov word[REAPCNT2], cx
+
+    sub di, 460
+
+    ;inc bx              
+    sub bx, 1900
+    imul bx, bx, 0x16D
+
+    add bx, di   ;bx=43464(# of days from 1900 to 2018)
+    mov word[TOTALDAYS], bx ;totaldays = 43464
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; add month days
+    mov bx, word[TOTALDAYS] ;;test
+	
+	mov cx, 9    			; month   
+    mov si, cx
+    dec cx
+    shl cx, 1
+
+    add bx, [monthsum+ecx]
+
+    mov ax, word[REAPCNT2]
+    mov cx, word[REAPCNT]        ;x년과 (x-1)년 윤년수 비교
+
+    sub ax, cx             
+    test ax, ax
+
+    jz .NOTREAPYEAR
+    cmp si, 3
+    js .NOTREAPYEAR
+    inc bx ;inc word[TOTALDAYS]
+
+.NOTREAPYEAR:
+
+    add bx, 22   			; day
+    xor dx, dx
+    mov ax, bx ;mov ax, word[TOTALDAYS]
+
+    mov cx, 7
+    div cx      ;remainder in dx
+
+
+    ;print week
+    mov ax, dx
+    mov bx, 3
+    mul bx
+    mov di, ax
+    
+    mov cl, byte[WEEK+di]
+    mov byte [ es: 210 ], cl
+    inc di
+    mov cl, byte[WEEK+di]
+    mov byte [ es: 212 ], cl
+    inc di
+    mov cl, byte[WEEK+di]
+    mov byte [ es: 214 ], cl
+
+;=====================================================
 
 ; print today date
 	xor si, si
@@ -162,10 +222,37 @@ HANDLEDISKERROR:
 	.MESSAGEEND:
 	jmp $
 
+;====================================
+GET_REAP_CNT:
+	;bx에 년도 들어옴 / cx에 윤년수 구한거 저장
+    mov cx, bx
+    shr cx, 2
+
+    mov ax, bx
+    mov si, 100
+    xor dx, dx
+    div si
+    sub cx, ax
+
+    mov ax, bx
+    mov si, 400
+    xor dx, dx
+    div si
+    add cx, ax    ; cx = 489
+    ret
+
+;===================================
+
 
 
 DATEMESSAGE:		db '00/00/0000', 0	
 DISKERRORMESSAGE:	db 'DISK Error', 0
+
+REAPCNT:                dw  0x00
+TOTALDAYS:              dw  0x00
+REAPCNT2:               dw  0x00
+monthsum DW 0,31,59,90,120,151,181,212,243,273,304,334
+WEEK:    db  'SUNMONTUEWEDTHUFRISAT', 0
 
 times 510 - ( $ - $$ ) db 0x00
 
