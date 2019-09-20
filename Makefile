@@ -27,7 +27,7 @@ Disk.img: BootLoader Kernel32
 	@echo =========== Disk Image Build Start ===========
 	@echo 
 
-	cat 00.BootLoader/BootLoader.bin 01.Kernel32/VirtualOS.bin 01.Kernel32/DatePrint.bin > Disk.img
+	cat 00.BootLoader/BootLoader1.bin 00.BootLoader/BootLoader2.bin 01.Kernel32/VirtualOS.bin > Disk.img
 
 	@echo 
 	@echo ============= All Build Complete =============

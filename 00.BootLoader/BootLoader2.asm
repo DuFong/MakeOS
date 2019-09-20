@@ -3,36 +3,17 @@
 
 SECTION .text
 
-jmp 0x07C0:START
-
 ; MINT64 OS setting
-TOTALSECTORCOUNT: dw 1025
+TOTALSECTORCOUNT: dw 1024
 
 
 ; CODE SECTOR
 
 START:
-    mov ax, 0x07C0
+    mov ax, cs
     mov ds, ax
     mov ax, 0xB800
     mov es, ax
-
-    ;Set Stack
-    mov ax, 0x0000
-	mov ss, ax
-	mov sp, 0xFFFF
-	mov bp, 0xFFFF
-	
-    mov si,    0
-    
-.SCREENCLEARLOOP:
-    mov byte [ es: si ], 0
-    mov byte [ es: si + 1 ], 0x0A
-
-    add si, 2
-    cmp si, 80 * 25 * 2
-
-    jl .SCREENCLEARLOOP
 
     mov si, 0
     mov di, 0
@@ -108,7 +89,7 @@ RESETDISK:
 	int 0x13
 	jc HANDLEDISKERROR
 
-	mov si, 0x1000
+	mov si, 0x1020
 	mov es, si
 	mov bx, 0x0000
 
@@ -153,7 +134,7 @@ READEND:
 	call PRINTMESSAGE
 	add sp, 6
 
-	jmp 0x1000:0x0000
+	jmp 0x1020:0x0000
 
 
 PRINTMESSAGE:
@@ -225,12 +206,12 @@ PRINTDATE:
 
 
 
-MESSAGE1:    db 'MINT64 OS Boot Loader Start', 0
+MESSAGE1:    db 'MINT64 OS Boot Loader Start~!!', 0
 MESSAGE2:    db 'Current Date:' , 0
-IMAGELOADINGMESSAGE: db 'OS Image Loading', 0
+IMAGELOADINGMESSAGE: db 'OS Image Loading...', 0
 DISKERRORMESSAGE:	 db 'DISK Error',0
-LOADINGCOMPLETEMESSAGE: db 'Complete', 04
-SECTORNUMBER:	db 0x02
+LOADINGCOMPLETEMESSAGE: db 'Complete~!!', 0
+SECTORNUMBER:	db 0x03
 HEADNUMBER: 	db 0x00
 TRACKNUMBER: 	db 0x00
 
