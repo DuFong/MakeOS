@@ -6,7 +6,7 @@ SECTION .text
 jmp 0x1000:START    ; cs(segment register) : 0x1000
 
 ; MINT64 OS setting
-TOTALSECTORCOUNT: dw 1024
+TOTALSECTORCOUNT: dw 2
 
 
 ; CODE SECTOR
@@ -96,8 +96,10 @@ READEND:
 	push 20
 	call PRINTMESSAGE
 	add sp, 6
+
 	; virtual OS image execute
 	jmp 0x1020:0x0000
+
 
 PRINTMESSAGE:
 	push bp
