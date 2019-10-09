@@ -1,11 +1,11 @@
 #include "Types.h"
 
-// ÇÔ¼ö ¼±¾ð
+// ï¿½Ô¼ï¿½ ï¿½ï¿½ï¿½ï¿½
 void kPrintString( int iX, int iY, const char* pcString );
 void kDoubleMappingPrintString( int iX, int iY, const char* pcString );
 
 /**
- *  ¾Æ·¡ ÇÔ¼ö´Â C ¾ð¾î Ä¿³ÎÀÇ ½ÃÀÛ ºÎºÐÀÓ
+ *  ï¿½Æ·ï¿½ ï¿½Ô¼ï¿½ï¿½ï¿½ C ï¿½ï¿½ï¿½ Ä¿ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Îºï¿½ï¿½ï¿½
  */
 void Main( void )
 {
@@ -13,36 +13,69 @@ void Main( void )
     kPrintString( 0, 12, "IA-32e C Language Kernel Start..............[Pass]" );
 
     kDoubleMappingPrintString( 0, 13, "This message is printed through the video memory relocated to 0xAB8000" );
+
+    kPrintString(0, 14, "Read from 0x1fe000 [  ]");
+    Readable(0x1FE000, 14);
+    kPrintString(0, 15, "Write to 0x1fe000 [  ]");
+    Writable(0x1FE000, 15);
+    kPrintString(0, 16, "Read from 0x1ff000 [  ]");
+    Readable(0x1FF000, 16);
+    kPrintString(0, 17, "Write to 0x1ff000 [  ]");
+ //   Writable(0x1FF000, 17);
+}
+
+void Readable(DWORD* address, int y){
+    DWORD test = 0xFF00FF;
+    test = *address;
+    
+    if(test != 0xFF00FF){
+        kPrintString(20, y, "OK");
+    }
+    else {
+        kPrintString(0, y, "                                             ");
+    }
+}
+
+void Writable(DWORD* address, int y){
+    DWORD test = 0xFF00FF;
+    *address = test;
+    
+    if(*address == 0xFF00FF){
+        kPrintString(19, y, "OK");
+    }
+    else {
+        kPrintString(0, y, "                                             ");
+    }
 }
 
 /**
- *  ¹®ÀÚ¿­À» X, Y À§Ä¡¿¡ Ãâ·Â
+ *  ï¿½ï¿½ï¿½Ú¿ï¿½ï¿½ï¿½ X, Y ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½ï¿½ï¿½
  */
 void kPrintString( int iX, int iY, const char* pcString )
 {
-    CHARACTER* pstScreen = ( CHARACTER* ) 0xB8000;
+    CHARACTER* pstScreen = ( CHARACTER* ) 0xAB8000;
     int i;
     
-    // X, Y ÁÂÇ¥¸¦ ÀÌ¿ëÇØ¼­ ¹®ÀÚ¿­À» Ãâ·ÂÇÒ ¾îµå·¹½º¸¦ °è»ê
+    // X, Y ï¿½ï¿½Ç¥ï¿½ï¿½ ï¿½Ì¿ï¿½ï¿½Ø¼ï¿½ ï¿½ï¿½ï¿½Ú¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½å·¹ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
     pstScreen += ( iY * 80 ) + iX;
 
-    // NULLÀÌ ³ª¿Ã ¶§±îÁö ¹®ÀÚ¿­ Ãâ·Â
+    // NULLï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ú¿ï¿½ ï¿½ï¿½ï¿½
     for( i = 0 ; pcString[ i ] != 0 ; i++ )
     {
         pstScreen[ i ].bCharactor = pcString[ i ];
     }
 }
 
-// 0xAB8000 ºñµð¿À ¸Þ¸ð¸®¸¦ ÅëÇØ¼­ ¹®ÀÚ¿­ Ãâ·Â
+// 0xAB8000 ï¿½ï¿½ï¿½ï¿½ ï¿½Þ¸ð¸®¸ï¿½ ï¿½ï¿½ï¿½Ø¼ï¿½ ï¿½ï¿½ï¿½Ú¿ï¿½ ï¿½ï¿½ï¿½
 void kDoubleMappingPrintString( int iX, int iY, const char* pcString )
 {
     CHARACTER* pstScreen = ( CHARACTER* ) 0xAB8000;
     int i;
     
-    // X, Y ÁÂÇ¥¸¦ ÀÌ¿ëÇØ¼­ ¹®ÀÚ¿­À» Ãâ·ÂÇÒ ¾îµå·¹½º¸¦ °è»ê
+    // X, Y ï¿½ï¿½Ç¥ï¿½ï¿½ ï¿½Ì¿ï¿½ï¿½Ø¼ï¿½ ï¿½ï¿½ï¿½Ú¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½å·¹ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
     pstScreen += ( iY * 80 ) + iX;
 
-    // NULLÀÌ ³ª¿Ã ¶§±îÁö ¹®ÀÚ¿­ Ãâ·Â
+    // NULLï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ú¿ï¿½ ï¿½ï¿½ï¿½
     for( i = 0 ; pcString[ i ] != 0 ; i++ )
     {
         pstScreen[ i ].bCharactor = pcString[ i ];

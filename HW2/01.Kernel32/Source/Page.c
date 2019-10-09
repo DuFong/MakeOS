@@ -41,10 +41,17 @@ void kInitializePageTables( void )
 	dwMappingAddress = 0;
 	for( i = 0 ; i < PAGE_MAXENTRYCOUNT * 64 ; i++ )
 	{
+		// 0x1ff000은 pstPDEntry[0]에 위치
+		// 페이지 크기를 4KB로 하기 위해 PS필드의 비트를 0으로 줌
+		if(i == 0){
+			kSetPageEntryData(&(pstPDEntry[i]), 0, 0x142000, PAGE_FLAGS_DEFAULT, 0);
+			dwMappingAddress += PAGE_DEFAULTSIZE;
+			continue;
+		}
 		//0xAB8000 비디오 메모리 맵핑
 		//0xAB8000은 pstPDEntry[5]에 위치, offset은 0xB8000과 같음
 		if(i == 5){
-			kSetPageEntryData( &( pstPDEntry[ 5 ] ), 0, 0, PAGE_FLAGS_DEFAULT | PAGE_FLAGS_PS, 0 );
+			kSetPageEntryData( &( pstPDEntry[ i ] ), 0, 0, PAGE_FLAGS_DEFAULT | PAGE_FLAGS_PS, 0 );
 			dwMappingAddress += PAGE_DEFAULTSIZE;
 			continue;
 		}
@@ -54,6 +61,18 @@ void kInitializePageTables( void )
 				( i * ( PAGE_DEFAULTSIZE >> 20 ) ) >> 12, dwMappingAddress, PAGE_FLAGS_DEFAULT | PAGE_FLAGS_PS, 0 );
 		dwMappingAddress += PAGE_DEFAULTSIZE;
 	}	
+
+	pstPTEntry = (PTENTRY*) 0x142000;
+	dwMappingAddress = 0;
+	for(i = 0; i < PAGE_MAXENTRYCOUNT; i++){
+		if(dwMappingAddress == 0x1FF000){
+			kSetPageEntryData(&(pstPTEntry[i]), 0, dwMappingAddress, PAGE_FLAGS_DEFAULT ^ PAGE_FLAGS_RW, 0);
+			dwMappingAddress += 0x1000;		// 4KB
+			continue;
+		}
+		kSetPageEntryData(&(pstPTEntry[i]), 0, dwMappingAddress, PAGE_FLAGS_DEFAULT, 0);
+		dwMappingAddress += 0x1000;		// 4KB
+	}
 
 }
 
