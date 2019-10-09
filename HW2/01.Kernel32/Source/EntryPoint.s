@@ -9,7 +9,7 @@ SECTION .text       ; text 섹션(세그먼트)을 정의
 START:
     mov ax, 0x0000
     mov es, ax
-    mov di, 0x8004              ;entries stored at 0x8000
+    mov di, 0x8004              ; di는 0x8004로 설정하는게 좋음
 
     ;===========================================================================
     ; RAM Size 
@@ -43,6 +43,10 @@ START:
 
 .jmpin:
     jcxz .skipent               ; 길이 0인 entry skip
+
+    mov eax, [es:di + 16]       ; type=1 => usable memory
+    cmp eax, 1
+    jne .skipent
 
 .notext:
     mov ecx, [es:di + 8]        ; get memory region length (RAM size)
