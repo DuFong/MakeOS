@@ -1,11 +1,11 @@
 #include "Types.h"
 
-// �Լ� ����
+// 함수 선언
 void kPrintString( int iX, int iY, const char* pcString );
 void kDoubleMappingPrintString( int iX, int iY, const char* pcString );
 
 /**
- *  �Ʒ� �Լ��� C ��� Ŀ���� ���� �κ���
+ *  아래 함수는 C 언어 커널의 시작 부분임
  */
 void Main( void )
 {
@@ -24,6 +24,7 @@ void Main( void )
  //   Writable(0x1FF000, 17);
 }
 
+// 해당 페이지 읽기 확인
 void Readable(DWORD* address, int y){
     DWORD test = 0xFF00FF;
     test = *address;
@@ -36,6 +37,7 @@ void Readable(DWORD* address, int y){
     }
 }
 
+// 해당 페이지에 쓰기 확인
 void Writable(DWORD* address, int y){
     DWORD test = 0xFF00FF;
     *address = test;
@@ -49,33 +51,29 @@ void Writable(DWORD* address, int y){
 }
 
 /**
- *  ���ڿ��� X, Y ��ġ�� ���
+ *  문자열을 X, Y 위치에 출력
  */
 void kPrintString( int iX, int iY, const char* pcString )
 {
     CHARACTER* pstScreen = ( CHARACTER* ) 0xAB8000;
     int i;
     
-    // X, Y ��ǥ�� �̿��ؼ� ���ڿ��� ����� ��巹���� ���
     pstScreen += ( iY * 80 ) + iX;
 
-    // NULL�� ���� ������ ���ڿ� ���
     for( i = 0 ; pcString[ i ] != 0 ; i++ )
     {
         pstScreen[ i ].bCharactor = pcString[ i ];
     }
 }
 
-// 0xAB8000 ���� �޸𸮸� ���ؼ� ���ڿ� ���
+// 0xAB8000 비디오 메모리를 통해서 문자열 출력
 void kDoubleMappingPrintString( int iX, int iY, const char* pcString )
 {
     CHARACTER* pstScreen = ( CHARACTER* ) 0xAB8000;
     int i;
     
-    // X, Y ��ǥ�� �̿��ؼ� ���ڿ��� ����� ��巹���� ���
     pstScreen += ( iY * 80 ) + iX;
 
-    // NULL�� ���� ������ ���ڿ� ���
     for( i = 0 ; pcString[ i ] != 0 ; i++ )
     {
         pstScreen[ i ].bCharactor = pcString[ i ];
