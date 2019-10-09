@@ -9,78 +9,71 @@ SECTION .text       ; text 섹션(세그먼트)을 정의
 START:
     mov ax, 0x0000
     mov es, ax
-    mov di, 0x8004  ;entries stored at 0x8000
+    mov di, 0x8004              ;entries stored at 0x8000
 
     ;===========================================================================
     ; RAM Size 
 
-    ; use the INT 0x15, eax= 0xE820 BIOS function to get a memory map
-    ; inputs: es:di -> destination buffer for 24 byte entries
-    ; outputs: bp = entry count, trashes all registers except esi
+    ; INT 0x15, eax= 0xE820 BIOS 인터럽트 발생시켜 memory map 가져옴
+    ; inputs: es:di (24바이트 entry를 위한 목적지버퍼)
 .startE820:
-    xor ebx, ebx    ; ebx must be 0 to start
-    xor bp, bp    ; keep an entry count in bp ====================> RAM size 저장할것임
-    mov edx, 0x0534D4150  ; Place "SMAP" into edx
+    ; 인터럽트 첫번째 발생
+    xor ebx, ebx
+    xor ebp, ebp                ; ebp ===> RAM size 저장할 공간
+    mov edx, 0x0534D4150        ; edx에 "SMAP" 설정
     mov eax, 0xe820
-    mov [es:di + 20], dword 1  ; force a valid ACPI 3.X entry
-    mov ecx, 24    ; ask for 24 bytes
+    mov ecx, 24                 ; buffer size 24바이트로 설정
     int 0x15
 
-    jc short .failed  ; carry set on first call means "unsupported function"
-    mov edx, 0x0534D4150  ; Some BIOSes apparently trash this register?
-    cmp eax, edx    ; on success, eax must have been reset to "SMAP"
+    jc short .failed            ; carry set => fail
+    mov edx, 0x0534D4150
+    cmp eax, edx                ; 인터럽트 성공하면 eax는 "SMAP"으로 설정됨
     jne short .failed
-    test ebx, ebx    ; ebx = 0 implies list is only 1 entry long (worthless)
+    test ebx, ebx               ; 첫 인터럽트에서 ebx가 0이면 fail
     je short .failed
     jmp short .jmpin
 
 .E820lp:
-    mov eax, 0xe820    ; eax, ecx get trashed on every int 0x15 call
-    mov [es:di + 20], dword 1  ; force a valid ACPI 3.X entry
-    mov ecx, 24    ; ask for 24 bytes again
+    mov eax, 0xe820  
+    mov ecx, 24                 ; buffer size 24바이트로 설정
     int 0x15
 
-    jc short .E820f    ; carry set means "end of list already reached"
-    mov edx, 0x0534D4150  ; repair potentially trashed register
+    jc short .E820f             ; carry set => end of list already reached
+    mov edx, 0x0534D4150
 
 .jmpin:
-    jcxz .skipent    ; skip any 0 length entries
-    cmp cl, 20    ; got a 24 byte ACPI 3.X response?
-    jbe short .notext
-    test byte [es:di + 20], 1  ; if so: is the "ignore this data" bit clear?
-    je short .skipent
+    jcxz .skipent               ; 길이 0인 entry skip
 
 .notext:
-    mov ecx, [es:di + 8]  ; get lower uint32_t of memory region length
-    or ecx, [es:di + 12]  ; "or" it with upper uint32_t to test for zero
-    jz .skipent    ; if length uint64_t is 0, skip entry
+    mov ecx, [es:di + 8]        ; get memory region length (RAM size)
+    test ecx, ecx               
+    jz .skipent                 ; length가 0이면 entry skip
 
-    add ebp, [es:di + 8]     ; add RAM size
-    ;inc bp      ; got a good entry: ++count, move to next storage spot
+    add ebp, [es:di + 8]        ; add RAM size to ebp
     add di, 24
 
 .skipent:
-    test ebx, ebx    ; if ebx resets to 0, list is complete
+    test ebx, ebx               ; ebx가 0이면 리스트 끝
     jne short .E820lp
 
 .E820f:
-    clc      ; there is "jc" on end of list to this point, so the carry must be cleared
+    clc      
     jmp .E820end
 
 .failed:
-    stc      ; "function unsupported" error exit
+    stc                         ; error exit
 
 .E820end:
     mov ax, 0xB800
     mov es, ax
 
-    mov eax, ebp        ; RAM size in ebp
-    shr eax, 20         ; B -> MB
+    mov eax, ebp                ; RAM size in ebp
+    shr eax, 20                 ; B =====> MB (1MB = 2^20B)
 
     xor edx, edx
-    mov cl, 10          ; 왜 cl로 하면 63나오고 cx로 하면 60나오지?
+    mov cl, 10          
     div cl
-    add ax, 0x3030      ; 10의 자리 숫자 in al, 1의 자리 숫자 in ah
+    add ax, 0x3030              ; 10의 자리 숫자 in al, 1의 자리 숫자 in ah
 
     mov byte[es:340], al
     mov byte[es:342], ah
