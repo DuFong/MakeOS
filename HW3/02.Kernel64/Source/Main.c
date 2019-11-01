@@ -143,7 +143,7 @@ void Writable(DWORD* address, int y){
  */
 void kPrintString( int iX, int iY, const char* pcString )
 {
-    CHARACTER* pstScreen = ( CHARACTER* ) 0xAB8000;
+    CHARACTER* pstScreen = ( CHARACTER* ) 0xB8000;
     int i;
     
     pstScreen += ( iY * 80 ) + iX;

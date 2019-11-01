@@ -46,4 +46,11 @@ void kStringToDecimalHexTest(const char* pcParameterBuffer);
 void kShutdown(const char* pcParameterBuffer);
 void kRaiseFault(const char* pcParameterBuffer);
 
+void kPrint1(const char* pcParameterBuffer);
+void kPrint2(const char* pcParameterBuffer);
+void kPrint3(const char* pcParameterBuffer);
+void kPrint11(const char* pcParameterBuffer);
+void kPrint22(const char* pcParameterBuffer);
+void kPrint33(const char* pcParameterBuffer);
+
 #endif /*__CONSOLESHELL_H__*/
