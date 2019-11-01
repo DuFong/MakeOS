@@ -4,7 +4,7 @@ SECTION .text
 
 global kInPortByte, kOutPortByte, kLoadGDTR, kLoadTR, kLoadIDTR
 global kEnableInterrupt, kDisableInterrupt, kReadRFLAGS
-global kGetExceptionAddress
+global kGetExceptionAddress, kGetPML4BaseAddress
 
 ; 포트로부터 1바이트를 읽음
 ; 인자: 포트번호
@@ -69,4 +69,9 @@ kReadRFLAGS:
 ; cr2 레지스터의 값 반환
 kGetExceptionAddress:
     mov rax, cr2
+    ret
+
+; cr3 레지스터의 값 반환
+kGetPML4BaseAddress:
+    mov rax, cr3
     ret

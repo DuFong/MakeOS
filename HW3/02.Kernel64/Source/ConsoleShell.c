@@ -10,7 +10,7 @@ SHELLCOMMANDENTRY gs_vstCommandTable[] = {
     {"totalram", "Show Total RAM Size", kShowTotalRAMSize},
     {"strtod", "String To Decimal/Hex Convert", kStringToDecimalHexTest},
     {"shutdown", "Shutdown And Reboot OS", kShutdown},
-    {"raisefault", "Access And Write On Address 0x1ff000", kRaiseFault},
+    {"raisefault", "Access And Write On Address 0x1ff000\nraisefault access\nraisefault write", kRaiseFault},
 
     {"print1", "print1", kPrint1},
     {"print2", "print2", kPrint2},
@@ -466,8 +466,32 @@ void kShutdown(const char* pcParameterBuffer){
 void kRaiseFault(const char* pcParameterBuffer){
     QWORD* address = 0x1FF000;
 
+    char* pcAccess = "access";
+    char* pcWrite = "write";
+    int i = 0;
+    int accessCount = 0;
+    int writeCount = 0;
+
+    // access인지 write인지 검사
+    while(pcParameterBuffer[i] != '\0'){
+        if(pcParameterBuffer[i] == pcAccess[i]){
+            accessCount++;
+        }
+        if(pcParameterBuffer[i] == pcWrite[i]){
+            writeCount++;
+        }
+        i++;
+    }
+
     // 접근
-    DWORD test = *address;
+    if(accessCount == 6){
+        DWORD test = *address;
+    }
     // 쓰기
-    *address = 0x1234567;
+    else if(writeCount == 5){
+        *address = 0x1234567;
+    }
+    else{
+        kPrintf("%s is invalid parameter.\nraisefault access\nraisefault write\n", pcParameterBuffer);
+    }
 }

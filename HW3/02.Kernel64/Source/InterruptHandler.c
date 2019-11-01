@@ -3,6 +3,10 @@
 #include "Keyboard.h"
 #include "Console.h"
 
+static inline void invlpg(void* m){
+    asm volatile("invlpg (%0)" ::"b"(m) : "memory");
+}
+
 // 페이지 폴트 출력
 void kPrintPageFault(QWORD qwExceptionAddress){
     QWORD test = 15;
@@ -18,6 +22,37 @@ void kPrintProtectionFault(QWORD qwExceptionAddress){
     kPrintf("        Protection Fault Occur~!!!!      \n");
     kPrintf("           Address: 0x%q\n", qwExceptionAddress);
     kPrintf("=========================================\n");
+}
+
+void kProcessFault(QWORD qwExceptionAddress, BOOL bProtectionFault){
+    DWORD dwOffset, dwTableOffset, dwDirectoryOffset, dwDirPointerOffset, dwPML4Offset;
+    QWORD *qwTableEntry, *qwDirectoryEntry, *qwDirPointerEntry, *qwPML4Entry;
+
+    // 예외가 발생한 선형 주소를 5단계로 나눔
+    dwOffset = qwExceptionAddress & MASK_OFFSET;
+    dwTableOffset = (qwExceptionAddress >> SHIFT_TABLE) & MASK_ENTRYOFFSET;
+    dwDirectoryOffset = (qwExceptionAddress >> SHIFT_DIRECTORY) & MASK_ENTRYOFFSET;
+    dwDirPointerOffset = (qwExceptionAddress >> SHIFT_DIRECTORYPTR) & MASK_ENTRYOFFSET;
+    dwPML4Offset = (qwExceptionAddress >> SHIFT_PML4) & MASK_ENTRYOFFSET;
+
+    // 예외가 발생한 선형 주소의 페이지 테이블 엔트리를 찾음
+    qwPML4Entry = kGetPML4BaseAddress() + SIZE_ENTRY * dwPML4Offset;
+    qwDirPointerEntry = (*qwPML4Entry & MASK_BASEADDRESS) + SIZE_ENTRY * dwDirPointerOffset;
+    qwDirectoryEntry = (*qwDirPointerEntry & MASK_BASEADDRESS) + SIZE_ENTRY * dwDirectoryOffset;
+    qwTableEntry = (*qwDirectoryEntry & MASK_BASEADDRESS) + SIZE_ENTRY * dwTableOffset;
+
+    // protection fault 처리
+    if(bProtectionFault){
+        *qwTableEntry |= 2;
+        invlpg(qwExceptionAddress);
+        kPrintProtectionFault(qwExceptionAddress);
+    }
+    // present bit 1로 set
+    else{
+        *qwTableEntry |= 1;
+        invlpg(qwExceptionAddress);
+        kPrintPageFault(qwExceptionAddress);
+    }
 }
 
 void kCommonExceptionHandler(int iVectorNumber, QWORD qwErrorCode){
@@ -37,20 +72,10 @@ void kCommonExceptionHandler(int iVectorNumber, QWORD qwErrorCode){
 }
 
 void kPageFaultHandler(int iVectorNumber, QWORD qwErrorCode){
-    char vcBuffer[7] = {0, };
-
     // 예외가 발생한 주소
     QWORD qwExceptionAddress = kGetExceptionAddress();
-
-    // 에러 코드를 통해 protection 위반이 있었는지 확인
-    if(qwErrorCode & 1){
-        kPrintProtectionFault(qwExceptionAddress);
-    }
-    else{
-        kPrintPageFault(qwExceptionAddress);
-    }
-
-    while(1);
+    // 다시 쉘로 복귀하기 위해 예외를 처리
+    kProcessFault(qwExceptionAddress, qwErrorCode & 1);
 }
 
 void kCommonInterruptHandler(int iVectorNumber){

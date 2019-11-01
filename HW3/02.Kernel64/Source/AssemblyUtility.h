@@ -12,5 +12,6 @@ void kEnableInterrupt();
 void kDisableInterrupt();
 QWORD kReadRFLAGS();
 QWORD kGetExceptionAddress();
+QWORD kGetPML4BaseAddress();
 
 #endif /*__ASSEMBLYUTILITY_H__*/
