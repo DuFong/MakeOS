@@ -71,45 +71,6 @@ void Main( void )
 
     // 셸을 시작
     kStartConsoleShell();
-
-    // while(1){
-    //     // 키 큐에 데이터가 있으면 키를 처리
-    //     if(kGetKeyFromKeyQueue(&stData) == TRUE){
-    //         // 키가 눌러졌으면 키의 아스키 코드 값을 화면에 출력
-    //         if(stData.bFlags & KEY_FLAGS_DOWN){
-    //             // 키 데이터의 아스키 코드 값을 저장
-    //             vcTemp[0] = stData.bASCIICode;
-    //             kPrintString(i++, 18, vcTemp);
-
-    //             // 0이 입력되면 변수를 0으로 나누어 Divide Error 예외(벡터 0번)를 발생시킴
-    //                 if(vcTemp[0] == '0'){
-    //                     // 아래 코드를 수행하면 Divide Error 예외가 발생하여 커널의 임시 핸들러가 수행됨
-    //                     bTemp = bTemp / 0;
-    //                 }
-    //                 else if(vcTemp[0] == 'w'){
-    //                     // 쓰기
-    //                     DWORD* address = 0x1FF000;
-    //                     *address = 0xFF0FF;
-    //                 }
-    //                 else if(vcTemp[0] == 'a'){
-    //                     // 접근
-    //                     DWORD* address = 0x1FF000;
-    //                     DWORD test = *address;
-    //                 }
-    //         }
-    //     }
-    // }
-
-    //kDoubleMappingPrintString( 0, 13, "This message is printed through the video memory relocated to 0xAB8000" );
-
-    // kPrintString(0, 14, "Read from 0x1fe000 [  ]");
-    // Readable(0x1FE000, 14);
-    // kPrintString(0, 15, "Write to 0x1fe000 [  ]");
-    // Writable(0x1FE000, 15);
-    // kPrintString(0, 16, "Read from 0x1ff000 [  ]");
-    // Readable(0x1FF000, 16);
-    // kPrintString(0, 17, "Write to 0x1ff000 [  ]");
- //   Writable(0x1FF000, 17);
 }
 
 // 해당 페이지 읽기 확인
