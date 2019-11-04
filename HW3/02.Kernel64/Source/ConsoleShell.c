@@ -93,7 +93,7 @@ void kStartConsoleShell(){
             {
                 if( iCommandBufferIndex > 0 )
                 {
-                    char fillArr[] = {'\0', '\0', '\0', '\0', '\0', '\0', '\0'};
+                    char fillArr[] = {'\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0'};
                     vcCommandBuffer[ iCommandBufferIndex ] = '\0';
                     kTabOnceCommand( vcCommandBuffer, fillArr);
                     for (int i=0; i<kStrLen(fillArr); i++)
