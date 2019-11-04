@@ -40,7 +40,7 @@ void kStartConsoleShell(){
         bbKey = bKey;
         // 키가 수신될 때까지 대기
         bKey = kGetCh();
-        
+
         if(bKey == KEY_BACKSPACE){
             if(iCommandBufferIndex > 0){
                 kGetCursor(&iCursorX, &iCursorY);
@@ -55,7 +55,7 @@ void kStartConsoleShell(){
             if(iCommandBufferIndex > 0){
                 // 커맨드 버퍼에 있는 명령을 실행
                 vcCommandBuffer[iCommandBufferIndex] = '\0';
-                
+
                 kMemCpy(historyCommand[idx], vcCommandBuffer, iCommandBufferIndex + 1); //history배열을 잘못 덮어쓰는 문제 해결하기 위해 +1해줌
                 if(++idx >= 10)
                     idx = 0;        //history배열 10칸이므로
@@ -63,7 +63,7 @@ void kStartConsoleShell(){
                 ccnt = 0;
                 if(cnt < 10)
                     cnt++;          //history배열에 들어있는 명령어 수
-                
+
                 kExecuteCommand(vcCommandBuffer);
             }
 
@@ -79,11 +79,15 @@ void kStartConsoleShell(){
                 //kPrintf( " " );
                 if( iCommandBufferIndex > 0 )
                 {
-                    kPrintf( "\n" );
-                    kTabCommand( vcCommandBuffer );
-                    kPrintf( "%s", CONSOLESHELL_PROMPTMESSAGE );
-                    kPrintf( "%s", vcCommandBuffer );
+                    if (kTabCommand( vcCommandBuffer ) == 1)
+                    {
+                        kPrintf( "\n" );
+                        kPrintf( "%s", CONSOLESHELL_PROMPTMESSAGE );
+                        kPrintf( "%s", vcCommandBuffer );
+                    }
+
                 }
+
             }
             else if (bbKey != KEY_TAB)//tab once
             {
@@ -100,9 +104,9 @@ void kStartConsoleShell(){
                         }
                     }
                 }
-                
+
             }
-            bKey = KEY_TAB; 
+            bKey = KEY_TAB;
         }
         else if(bKey == KEY_UP){
             if(ccnt < cnt){         // 방향키 누른 횟수 check (최대10번)
@@ -120,13 +124,13 @@ void kStartConsoleShell(){
                 kSetCursor(0, iCursorY);
                 kPrintf("%s", CONSOLESHELL_PROMPTMESSAGE);
                 kPrintf( "%s", historyCommand[cidx]);
-                
+
                 // iCommandBufferIndex와 vcCommandBuffer 설정
                 iCommandBufferIndex = kStrLen(historyCommand[cidx]);        //프롬프트 없어지는거 해결..
                 kMemCpy(vcCommandBuffer, historyCommand[cidx], iCommandBufferIndex);
-                
+
             }
-            
+
         }
         else if(bKey == KEY_DOWN){
             if(ccnt > 0){       // 최대 up key누른 횟수만큼 down할 수 있음
@@ -156,7 +160,7 @@ void kStartConsoleShell(){
                     // iCommandBufferIndex와 vcCommandBuffer 설정
                     iCommandBufferIndex = kStrLen(historyCommand[cidx]);
                     kMemCpy(vcCommandBuffer, historyCommand[cidx], iCommandBufferIndex);
-                }    
+                }
             }
         }
         else if((bKey == KEY_LSHIFT) || (bKey == KEY_RSHIFT) || (bKey == KEY_CAPSLOCK) || (bKey == KEY_NUMLOCK) || (bKey == KEY_SCROLLLOCK)){
@@ -203,13 +207,13 @@ void kExecuteCommand(const char* pcCommandBuffer){
     }
 }
 
-void kTabCommand( const char* pcCommandBuffer )
+int kTabCommand( const char* pcCommandBuffer )
 {
     int i, iSpaceIndex;
     int iCommandBufferLength, iCommandLength;
     int iCount, tab2arr_index;
     int tab2[] = {-1, -1, -1, -1, -1};
- 
+    int check = 0;
     iCommandBufferLength = kStrLen( pcCommandBuffer );
     for( iSpaceIndex = 0 ; iSpaceIndex < iCommandBufferLength ; iSpaceIndex++ )
     {
@@ -218,33 +222,38 @@ void kTabCommand( const char* pcCommandBuffer )
             break;
         }
     }
- 
+
     //kPrintf( "tab twice\n");
     tab2arr_index = 0;
     iCount = sizeof( gs_vstCommandTable ) / sizeof( SHELLCOMMANDENTRY );
- 
+
     for( i = 0 ; i < iCount ; i++ ) //command for
     {
-        iCommandLength = kStrLen( gs_vstCommandTable[ i ].pcCommand );
- 
+
         if( kMemCmp( gs_vstCommandTable[ i ].pcCommand, pcCommandBuffer,
                        iSpaceIndex ) == 0 )
         {
-            //gs_vstCommandTable[ i ].pfFunction( pcCommandBuffer + iSpaceIndex + 1 );
+
             tab2[tab2arr_index] = i;
             tab2arr_index++;
-            //kPrintf("%s\n", gs_vstCommandTable[ i ].pcCommand);
-            //break;
+            check = 1;
         }
+    }
+    if (check  == 1)
+    {
+        kPrintf("\n");
     }
     for( int l = 0; l < tab2arr_index; l++)
     {
         int tmp = tab2[l];
         kPrintf("%s ", gs_vstCommandTable[tmp].pcCommand);
     }
-    kPrintf("\n");
-} 
-
+    if (check  == 1)
+    {
+        kPrintf("\n");
+    }
+    return check;
+}
 void kTabOnceCommand( const char* pcCommandBuffer , char* fillArr)
 {
     int i, iSpaceIndex;
@@ -264,9 +273,10 @@ void kTabOnceCommand( const char* pcCommandBuffer , char* fillArr)
 
     tab2arr_index = 0;
     iCount = sizeof( gs_vstCommandTable ) / sizeof( SHELLCOMMANDENTRY );
-
+    int check = 0;
     for( i = 0 ; i < iCount ; i++ ) //command for
     {
+
 
         if( kMemCmp( gs_vstCommandTable[ i ].pcCommand, pcCommandBuffer,
                        iSpaceIndex ) == 0 )
@@ -279,9 +289,23 @@ void kTabOnceCommand( const char* pcCommandBuffer , char* fillArr)
             {
                 minCommandLen = kStrLen(gs_vstCommandTable[ i ].pcCommand);
             }
+            check = 1;
+        }
+        else
+        {
+            continue;
         }
     }
+    if (check == 0)
+    {
+        return;
+    }
 
+
+    // kPrintf("iSpaceindex = %d\n", iSpaceIndex);
+    // kPrintf("min = %d\n", minCommandLen);
+    // int tmp = tab2[l];
+    // kPrintf("%s ", gs_vstCommandTable[tmp].pcCommand);
     int tmp = tab2[0];
     int sync = iSpaceIndex;
 
@@ -314,7 +338,7 @@ void kTabOnceCommand( const char* pcCommandBuffer , char* fillArr)
         fillIdx++;
     }
 
-} 
+}
 
 // 파라미터 자료구조를 초기화
 void kInitializeParameter(PARAMETERLIST* pstList, const char* pcParameter){
@@ -447,7 +471,7 @@ void kStringToDecimalHexTest(const char* pcParameterBuffer){
             lValue = kAToI(vcParameter, 10);
             kPrintf("Decimal Value = %d\n", lValue);
         }
-        
+
         iCount++;
     }
 }
