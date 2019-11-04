@@ -94,7 +94,7 @@ void kStartConsoleShell(){
                 if( iCommandBufferIndex > 0 )
                 {
                     //initialize autocomplete string
-                    char fillArr[] = {'\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0'};
+                    char fillArr[10] = {'\0', };//'\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0'};
                     vcCommandBuffer[ iCommandBufferIndex ] = '\0';
                     kTabOnceCommand( vcCommandBuffer, fillArr);
 
@@ -109,7 +109,6 @@ void kStartConsoleShell(){
                 }
 
             }
-            bKey = KEY_TAB;
         }
         else if(bKey == KEY_UP){
             if(ccnt < cnt){         // 방향키 누른 횟수 check (최대10번)
@@ -217,7 +216,7 @@ int kTabCommand( const char* pcCommandBuffer )
     int iCount, tab2arr_index;
 
     // array to store candidate command's index
-    int tab2[] = {-1, -1, -1, -1, -1};
+    int tab2[5] = {-1,};
 
     // check variable if there is matching command
     int check = 0;
@@ -269,7 +268,7 @@ void kTabOnceCommand( const char* pcCommandBuffer , char* fillArr)
     int i, iSpaceIndex;
     int iCommandBufferLength, iCommandLength;
     int iCount, tab2arr_index;
-    int tab2[] = {-1, -1, -1, -1, -1};
+    int tab2[5] = {-1, };
     int minCommandLen = 100;
 
     iCommandBufferLength = kStrLen( pcCommandBuffer );
