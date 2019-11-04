@@ -73,29 +73,32 @@ void kStartConsoleShell(){
             iCommandBufferIndex = 0;
         }
         else if(bKey == KEY_TAB){
-            //tab처리하는 코드
-            if ( bbKey == KEY_TAB) //tab twice
+            //tab twice
+            if ( bbKey == KEY_TAB)
             {
-                //kPrintf( " " );
                 if( iCommandBufferIndex > 0 )
                 {
+                    // if search results exist
                     if (kTabCommand( vcCommandBuffer ) == 1)
                     {
+                        //print new prompt
                         kPrintf( "\n" );
                         kPrintf( "%s", CONSOLESHELL_PROMPTMESSAGE );
                         kPrintf( "%s", vcCommandBuffer );
                     }
-
                 }
-
             }
-            else if (bbKey != KEY_TAB)//tab once
+            //tab once
+            else if (bbKey != KEY_TAB)
             {
                 if( iCommandBufferIndex > 0 )
                 {
+                    //initialize autocomplete string
                     char fillArr[] = {'\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0'};
                     vcCommandBuffer[ iCommandBufferIndex ] = '\0';
                     kTabOnceCommand( vcCommandBuffer, fillArr);
+
+                    //add autocomplete string into vcCommandBuffer
                     for (int i=0; i<kStrLen(fillArr); i++)
                     {
                         if (fillArr[i] != '\0')
@@ -212,9 +215,14 @@ int kTabCommand( const char* pcCommandBuffer )
     int i, iSpaceIndex;
     int iCommandBufferLength, iCommandLength;
     int iCount, tab2arr_index;
+
+    // array to store candidate command's index
     int tab2[] = {-1, -1, -1, -1, -1};
+
+    // check variable if there is matching command
     int check = 0;
     iCommandBufferLength = kStrLen( pcCommandBuffer );
+
     for( iSpaceIndex = 0 ; iSpaceIndex < iCommandBufferLength ; iSpaceIndex++ )
     {
         if( pcCommandBuffer[ iSpaceIndex ] == ' ' )
@@ -223,17 +231,15 @@ int kTabCommand( const char* pcCommandBuffer )
         }
     }
 
-    //kPrintf( "tab twice\n");
     tab2arr_index = 0;
     iCount = sizeof( gs_vstCommandTable ) / sizeof( SHELLCOMMANDENTRY );
 
-    for( i = 0 ; i < iCount ; i++ ) //command for
+    for( i = 0 ; i < iCount ; i++ )
     {
-
+        //if there is matching command, store its index in tab2
         if( kMemCmp( gs_vstCommandTable[ i ].pcCommand, pcCommandBuffer,
                        iSpaceIndex ) == 0 )
         {
-
             tab2[tab2arr_index] = i;
             tab2arr_index++;
             check = 1;
@@ -243,15 +249,19 @@ int kTabCommand( const char* pcCommandBuffer )
     {
         kPrintf("\n");
     }
+
+    //print candidate commands
     for( int l = 0; l < tab2arr_index; l++)
     {
         int tmp = tab2[l];
         kPrintf("%s ", gs_vstCommandTable[tmp].pcCommand);
     }
+
     if (check  == 1)
     {
         kPrintf("\n");
     }
+
     return check;
 }
 void kTabOnceCommand( const char* pcCommandBuffer , char* fillArr)
@@ -274,17 +284,14 @@ void kTabOnceCommand( const char* pcCommandBuffer , char* fillArr)
     tab2arr_index = 0;
     iCount = sizeof( gs_vstCommandTable ) / sizeof( SHELLCOMMANDENTRY );
     int check = 0;
-    for( i = 0 ; i < iCount ; i++ ) //command for
+    for( i = 0 ; i < iCount ; i++ )
     {
-
-
         if( kMemCmp( gs_vstCommandTable[ i ].pcCommand, pcCommandBuffer,
                        iSpaceIndex ) == 0 )
         {
             tab2[tab2arr_index] = i;
             tab2arr_index++;
 
-            //min length of candidate command
             if ( kStrLen(gs_vstCommandTable[ i ].pcCommand) < minCommandLen)
             {
                 minCommandLen = kStrLen(gs_vstCommandTable[ i ].pcCommand);
@@ -301,19 +308,14 @@ void kTabOnceCommand( const char* pcCommandBuffer , char* fillArr)
         return;
     }
 
-
-    // kPrintf("iSpaceindex = %d\n", iSpaceIndex);
-    // kPrintf("min = %d\n", minCommandLen);
-    // int tmp = tab2[l];
-    // kPrintf("%s ", gs_vstCommandTable[tmp].pcCommand);
     int tmp = tab2[0];
     int sync = iSpaceIndex;
 
+    //find common string in candidate commands
     for (; sync < minCommandLen; sync++)
     {
         BOOL flag = 0;
         char stdChar = gs_vstCommandTable[tmp].pcCommand[sync];
-        //kPrintf("%c", stdChar);
         for (int k = 1; k < tab2arr_index; k++)
         {
             int tmp2 = tab2[k];
@@ -330,6 +332,8 @@ void kTabOnceCommand( const char* pcCommandBuffer , char* fillArr)
     }
 
     int fillIdx = 0;
+
+    //put autocomplete string in fillArr
     for (int i = iSpaceIndex; i<sync; i++)
     {
         char fill = gs_vstCommandTable[tmp].pcCommand[i];
