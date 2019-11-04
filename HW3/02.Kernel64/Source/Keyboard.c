@@ -281,7 +281,7 @@ static KEYMAPPINGENTRY gs_vstKeyMappingTable[KEY_MAPPINGTABLEMAXCOUNT] = {
     /*  70  */  {   KEY_SCROLLLOCK  ,   KEY_SCROLLLOCK  },
 
     /*  71  */  {   KEY_HOME        ,   '7'             },
-    /*  72  */  {   KEY_UP          ,   '8'             },
+    /*  72  */  {   KEY_UP          ,   KEY_UP          },
     /*  73  */  {   KEY_PAGEUP      ,   '9'             },
     /*  74  */  {   '-'             ,   '-'             },
     /*  75  */  {   KEY_LEFT        ,   '4'             },
@@ -289,7 +289,7 @@ static KEYMAPPINGENTRY gs_vstKeyMappingTable[KEY_MAPPINGTABLEMAXCOUNT] = {
     /*  77  */  {   KEY_RIGHT       ,   '6'             },
     /*  78  */  {   '+'             ,   '+'             },
     /*  79  */  {   KEY_END         ,   '1'             },
-    /*  80  */  {   KEY_DOWN        ,   '2'             },
+    /*  80  */  {   KEY_DOWN        ,   KEY_DOWN        },
     /*  81  */  {   KEY_PAGEDOWN    ,   '3'             },
     /*  82  */  {   KEY_INS         ,   '0'             },
     /*  83  */  {   KEY_DEL         ,   '.'             },

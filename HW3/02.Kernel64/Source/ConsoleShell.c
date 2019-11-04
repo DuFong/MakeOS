@@ -104,7 +104,7 @@ void kStartConsoleShell(){
             }
             bKey = KEY_TAB; 
         }
-        else if(bKey == KEY_F1){
+        else if(bKey == KEY_UP){
             if(ccnt < cnt){         // 방향키 누른 횟수 check (최대10번)
                 ccnt++;
                 if(--cidx < 0)
@@ -128,7 +128,7 @@ void kStartConsoleShell(){
             }
             
         }
-        else if(bKey == KEY_F2){
+        else if(bKey == KEY_DOWN){
             if(ccnt > 0){       // 최대 up key누른 횟수만큼 down할 수 있음
                 ccnt--;
                 if(++cidx >= 10)
