@@ -2,6 +2,7 @@
 #include "AssemblyUtility.h"
 #include "Keyboard.h"
 #include "Queue.h"
+#include "Synchronization.h"
 
 // 출력 버퍼(포트0x60)에 수신된 데이터가 있는지 여부 반환
 BOOL kIsOutputBufferFull(){
@@ -484,14 +485,14 @@ BOOL kConvertScanCodeAndPutQueue(BYTE bScanCode){
 
     // 스캔 코드를 아스키 코드와 키 상태로 변환하여 키 데이터에 삽입
     if(kConvertScanCodeToASCIICode(bScanCode, &(stData.bASCIICode), &(stData.bFlags)) == TRUE){
-        // 인터럽트 불가
-        bPreviousInterrupt = kSetInterruptFlag(FALSE);
-
+        // 임계 영역 시작
+        bPreviousInterrupt = kLockForSystemData();
+        
         // 키 큐에 삽입
-        bResult = kPutQueue(&gs_stKeyQueue, &stData);
+        bResult = kPutQueue( &gs_stKeyQueue, &stData );
 
-        // 이전 인터럽트 플래그 복원
-        kSetInterruptFlag(bPreviousInterrupt);
+        // 임계 영역 끝
+        kUnlockForSystemData( bPreviousInterrupt );
     }
 
     return bResult;
@@ -506,13 +507,13 @@ BOOL kGetKeyFromKeyQueue(KEYDATA* pstData){
         return FALSE;
     }
 
-    // 인터럽트 불가
-    bPreviousInterrupt = kSetInterruptFlag(FALSE);
+    // 임계 영역 시작
+    bPreviousInterrupt = kLockForSystemData();
 
     // 키 큐에서 키 데이터를 제거
-    bResult = kGetQueue(&gs_stKeyQueue, pstData);
+    bResult = kGetQueue( &gs_stKeyQueue, pstData );
 
-    // 이전 인터럽트 플래그 복원
-    kSetInterruptFlag(bPreviousInterrupt);
+    // 임계 영역 끝
+    kUnlockForSystemData( bPreviousInterrupt );
     return bResult;
 }

@@ -1,11 +1,3 @@
-/**
- *  file    Task.h
- *  date    2009/02/19
- *  author  kkamagui 
- *          Copyright(c)2008 All rights reserved by kkamagui
- *  brief   태스크를 처리하는 함수에 관련된 파일
- */
-
 #ifndef __TASK_H__
 #define __TASK_H__
 
@@ -52,14 +44,42 @@
 #define TASK_MAXCOUNT           256
 
 // 스택 풀과 스택의 크기
-#define TASK_STACKPOOLADDRESS   (TASK_TCBPOOLADDRESS + sizeof(TCB) * TASK_MAXCOUNT)
+#define TASK_STACKPOOLADDRESS   ( TASK_TCBPOOLADDRESS + sizeof( TCB ) * TASK_MAXCOUNT )
 #define TASK_STACKSIZE          8192
 
 // 유효하지 않은 태스크 ID
 #define TASK_INVALIDID          0xFFFFFFFFFFFFFFFF
 
-// 태스크가 최대로 쓸 수 있는 프로세서 시간(5ms)
+// 태스크가 최대로 쓸 수 있는 프로세서 시간(5 ms)
 #define TASK_PROCESSORTIME      5
+
+// 준비 리스트의 수
+#define TASK_MAXREADYLISTCOUNT  5
+
+// 태스크의 우선 순위
+#define TASK_FLAGS_HIGHEST            0
+#define TASK_FLAGS_HIGH               1
+#define TASK_FLAGS_MEDIUM             2
+#define TASK_FLAGS_LOW                3
+#define TASK_FLAGS_LOWEST             4
+#define TASK_FLAGS_WAIT               0xFF          
+
+// 태스크의 플래그
+#define TASK_FLAGS_ENDTASK            0x8000000000000000
+#define TASK_FLAGS_SYSTEM             0x4000000000000000
+#define TASK_FLAGS_PROCESS            0x2000000000000000
+#define TASK_FLAGS_THREAD             0x1000000000000000
+#define TASK_FLAGS_IDLE               0x0800000000000000
+
+// 함수 매크로
+#define GETPRIORITY( x )        ( ( x ) & 0xFF )
+#define SETPRIORITY( x, priority )  ( ( x ) = ( ( x ) & 0xFFFFFFFFFFFFFF00 ) | ( priority ) )
+#define GETTCBOFFSET( x )       ( ( x ) & 0xFFFFFFFF )
+
+// 자식 스레드 링크에 연결된 stThreadLink 정보에서 태스크 자료구조(TCB) 위치를 
+// 계산하여 반환하는 매크로
+#define GETTCBFROMTHREADLINK( x )   ( TCB* ) ( ( QWORD ) ( x ) - offsetof( TCB, stThreadLink ) )
+
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -75,15 +95,31 @@ typedef struct kContextStruct
     QWORD vqRegister[ TASK_REGISTERCOUNT ];
 } CONTEXT;
 
-// 태스크의 상태를 관리하는 자료구조
+// 태스크(프로세스 및 스레드)의 상태를 관리하는 자료구조
 typedef struct kTaskControlBlockStruct
 {
     // 다음 데이터의 위치와 ID
     LISTLINK stLink;
-
+    
     // 플래그
     QWORD qwFlags;
+    
+    // 프로세스 메모리 영역의 시작과 크기
+    void* pvMemoryAddress;
+    QWORD qwMemorySize;
 
+    //==========================================================================
+    // 이하 스레드 정보
+    //==========================================================================
+    // 자식 스레드의 위치와 ID
+    LISTLINK stThreadLink;
+    
+    // 자식 스레드의 리스트
+    LIST stChildThreadList;
+    
+    // 부모 프로세스의 ID
+    QWORD qwParentProcessID;
+    
     // 콘텍스트
     CONTEXT stContext;
 
@@ -93,26 +129,40 @@ typedef struct kTaskControlBlockStruct
 } TCB;
 
 // TCB 풀의 상태를 관리하는 자료구조
-typedef struct kTCBPoolManagerStruct{
+typedef struct kTCBPoolManagerStruct
+{
     // 태스크 풀에 대한 정보
     TCB* pstStartAddress;
     int iMaxCount;
     int iUseCount;
-
+    
     // TCB가 할당된 횟수
     int iAllocatedCount;
 } TCBPOOLMANAGER;
 
 // 스케줄러의 상태를 관리하는 자료구조
-typedef struct kSchedulerStruct{
+typedef struct kSchedulerStruct
+{
     // 현재 수행 중인 태스크
     TCB* pstRunningTask;
-
+    
     // 현재 수행 중인 태스크가 사용할 수 있는 프로세서 시간
     int iProcessorTime;
+    
+    // 실행할 태스크가 준비중인 리스트, 태스크의 우선 순위에 따라 구분
+    LIST vstReadyList[ TASK_MAXREADYLISTCOUNT ];
 
-    // 실행할 태스크가 준비 중인 리스트
-    LIST stReadyList;
+    // 종료할 태스크가 대기중인 리스트
+    LIST stWaitList;
+    
+    // 각 우선 순위별로 태스크를 실행한 횟수를 저장하는 자료구조
+    int viExecuteCount[ TASK_MAXREADYLISTCOUNT ];
+    
+    // 프로세서 부하를 계산하기 위한 자료구조
+    QWORD qwProcessorLoad;
+    
+    // 유휴 태스크(Idle Task)에서 사용한 프로세서 시간
+    QWORD qwSpendProcessorTimeInIdleTask;
 } SCHEDULER;
 
 #pragma pack( pop )
@@ -122,22 +172,42 @@ typedef struct kSchedulerStruct{
 // 함수
 //
 ////////////////////////////////////////////////////////////////////////////////
-// 태스크 풀과 관련
-void kInitializeTCBPool();
-TCB* kAllocateTCB();
-void kFreeTCB(QWORD qwID);
-TCB* kCreateTask(QWORD qwFlags, QWORD qwEntryPointAddress);
-void kSetUpTask( TCB* pstTCB, QWORD qwFlags, QWORD qwEntryPointAddress, void* pvStackAddress, QWORD qwStackSize );
+//==============================================================================
+//  태스크 풀과 태스크 관련
+//==============================================================================
+static void kInitializeTCBPool( void );
+static TCB* kAllocateTCB( void );
+static void kFreeTCB( QWORD qwID );
+TCB* kCreateTask( QWORD qwFlags, void* pvMemoryAddress, QWORD qwMemorySize, QWORD qwEntryPointAddress );
+static void kSetUpTask( TCB* pstTCB, QWORD qwFlags, QWORD qwEntryPointAddress, void* pvStackAddress, QWORD qwStackSize );
 
-// 스케쥴러 관련
-void kInitializeScheduler();
-void kSetRunningTask(TCB* pstTask);
-TCB* kGetRunningTask();
-TCB* kGetNextTaskToRun();
-void kAddTaskToReadyList(TCB* pstTask);
-void kSchedule();
-BOOL kScheduleInInterrupt();
-void kDecreaseProcessorTime();
-BOOL kIsProcessorTimeExpired();
+//==============================================================================
+//  스케줄러 관련
+//==============================================================================
+void kInitializeScheduler( void );
+void kSetRunningTask( TCB* pstTask );
+TCB* kGetRunningTask( void );
+static TCB* kGetNextTaskToRun( void );
+static BOOL kAddTaskToReadyList( TCB* pstTask );
+void kSchedule( void );
+BOOL kScheduleInInterrupt( void );
+void kDecreaseProcessorTime( void );
+BOOL kIsProcessorTimeExpired( void );
+static TCB* kRemoveTaskFromReadyList( QWORD qwTaskID );
+BOOL kChangePriority( QWORD qwID, BYTE bPriority );
+BOOL kEndTask( QWORD qwTaskID );
+void kExitTask( void );
+int kGetReadyTaskCount( void );
+int kGetTaskCount( void );
+TCB* kGetTCBInTCBPool( int iOffset );
+BOOL kIsTaskExist( QWORD qwID );
+QWORD kGetProcessorLoad( void );
+static TCB* kGetProcessByThread( TCB* pstThread );
+
+//==============================================================================
+//  유휴 태스크 관련
+//==============================================================================
+void kIdleTask( void );
+void kHaltProcessorByLoad( void );
 
 #endif /*__TASK_H__*/
