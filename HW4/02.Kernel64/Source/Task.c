@@ -1,15 +1,15 @@
 #include "Task.h"
 #include "Descriptor.h"
 
-// ½ºÄÉÁÙ·¯ °ü·Ã ÀÚ·á±¸Á¶
+// ìŠ¤ì¼€ì¤„ëŸ¬ ê´€ë ¨ ìë£Œêµ¬ì¡°
 static SCHEDULER gs_stScheduler;
 static TCBPOOLMANAGER gs_stTCBPoolManager;
 
 //==============================================================================
-//  ÅÂ½ºÅ© Ç®°ú ÅÂ½ºÅ© °ü·Ã
+//  íƒœìŠ¤í¬ í’€ê³¼ íƒœìŠ¤í¬ ê´€ë ¨
 //==============================================================================
 /**
- *  ÅÂ½ºÅ© Ç® ÃÊ±âÈ­
+ *  íƒœìŠ¤í¬ í’€ ì´ˆê¸°í™”
  */
 static void kInitializeTCBPool( void )
 {
@@ -17,23 +17,23 @@ static void kInitializeTCBPool( void )
     
     kMemSet( &( gs_stTCBPoolManager ), 0, sizeof( gs_stTCBPoolManager ) );
     
-    // ÅÂ½ºÅ© Ç®ÀÇ ¾îµå·¹½º¸¦ ÁöÁ¤ÇÏ°í ÃÊ±âÈ­
+    // íƒœìŠ¤í¬ í’€ì˜ ì–´ë“œë ˆìŠ¤ë¥¼ ì§€ì •í•˜ê³  ì´ˆê¸°í™”
     gs_stTCBPoolManager.pstStartAddress = ( TCB* ) TASK_TCBPOOLADDRESS;
     kMemSet( TASK_TCBPOOLADDRESS, 0, sizeof( TCB ) * TASK_MAXCOUNT );
 
-    // TCB¿¡ ID ÇÒ´ç
+    // TCBì— ID í• ë‹¹
     for( i = 0 ; i < TASK_MAXCOUNT ; i++ )
     {
         gs_stTCBPoolManager.pstStartAddress[ i ].stLink.qwID = i;
     }
     
-    // TCBÀÇ ÃÖ´ë °³¼ö¿Í ÇÒ´çµÈ È½¼ö¸¦ ÃÊ±âÈ­
+    // TCBì˜ ìµœëŒ€ ê°œìˆ˜ì™€ í• ë‹¹ëœ íšŸìˆ˜ë¥¼ ì´ˆê¸°í™”
     gs_stTCBPoolManager.iMaxCount = TASK_MAXCOUNT;
     gs_stTCBPoolManager.iAllocatedCount = 1;
 }
 
 /**
- *  TCB¸¦ ÇÒ´ç ¹ŞÀ½
+ *  TCBë¥¼ í• ë‹¹ ë°›ìŒ
  */
 static TCB* kAllocateTCB( void )
 {
@@ -47,7 +47,7 @@ static TCB* kAllocateTCB( void )
 
     for( i = 0 ; i < gs_stTCBPoolManager.iMaxCount ; i++ )
     {
-        // IDÀÇ »óÀ§ 32ºñÆ®°¡ 0ÀÌ¸é ÇÒ´çµÇÁö ¾ÊÀº TCB
+        // IDì˜ ìƒìœ„ 32ë¹„íŠ¸ê°€ 0ì´ë©´ í• ë‹¹ë˜ì§€ ì•Šì€ TCB
         if( ( gs_stTCBPoolManager.pstStartAddress[ i ].stLink.qwID >> 32 ) == 0 )
         {
             pstEmptyTCB = &( gs_stTCBPoolManager.pstStartAddress[ i ] );
@@ -55,8 +55,10 @@ static TCB* kAllocateTCB( void )
         }
     }
 
-    // »óÀ§ 32ºñÆ®¸¦ 0ÀÌ ¾Æ´Ñ °ªÀ¸·Î ¼³Á¤ÇØ¼­ ÇÒ´çµÈ TCB·Î ¼³Á¤
+    // ìƒìœ„ 32ë¹„íŠ¸ë¥¼ 0ì´ ì•„ë‹Œ ê°’ìœ¼ë¡œ ì„¤ì •í•´ì„œ í• ë‹¹ëœ TCBë¡œ ì„¤ì •
     pstEmptyTCB->stLink.qwID = ( ( QWORD ) gs_stTCBPoolManager.iAllocatedCount << 32 ) | i;
+    // passê°’ 0ìœ¼ë¡œ ì´ˆê¸°í™”
+	pstEmptyTCB->pass = 0;
     gs_stTCBPoolManager.iUseCount++;
     gs_stTCBPoolManager.iAllocatedCount++;
     if( gs_stTCBPoolManager.iAllocatedCount == 0 )
@@ -68,16 +70,16 @@ static TCB* kAllocateTCB( void )
 }
 
 /**
- *  TCB¸¦ ÇØÁ¦ÇÔ
+ *  TCBë¥¼ í•´ì œí•¨
  */
 static void kFreeTCB( QWORD qwID )
 {
     int i;
     
-    // ÅÂ½ºÅ© IDÀÇ ÇÏÀ§ 32ºñÆ®°¡ ÀÎµ¦½º ¿ªÇÒÀ» ÇÔ
+    // íƒœìŠ¤í¬ IDì˜ í•˜ìœ„ 32ë¹„íŠ¸ê°€ ì¸ë±ìŠ¤ ì—­í• ì„ í•¨
     i = GETTCBOFFSET( qwID );
     
-    // TCB¸¦ ÃÊ±âÈ­ÇÏ°í ID ¼³Á¤
+    // TCBë¥¼ ì´ˆê¸°í™”í•˜ê³  ID ì„¤ì •
     kMemSet( &( gs_stTCBPoolManager.pstStartAddress[ i ].stContext ), 0, sizeof( CONTEXT ) );
     gs_stTCBPoolManager.pstStartAddress[ i ].stLink.qwID = i;
     
@@ -85,50 +87,53 @@ static void kFreeTCB( QWORD qwID )
 }
 
 /**
- *  ÅÂ½ºÅ©¸¦ »ı¼º
- *      ÅÂ½ºÅ© ID¿¡ µû¶ó¼­ ½ºÅÃ Ç®¿¡¼­ ½ºÅÃ ÀÚµ¿ ÇÒ´ç
- *      ÇÁ·Î¼¼½º ¹× ½º·¹µå ¸ğµÎ »ı¼º °¡´É
+ *  íƒœìŠ¤í¬ë¥¼ ìƒì„±
+ *      íƒœìŠ¤í¬ IDì— ë”°ë¼ì„œ ìŠ¤íƒ í’€ì—ì„œ ìŠ¤íƒ ìë™ í• ë‹¹
+ *      í”„ë¡œì„¸ìŠ¤ ë° ìŠ¤ë ˆë“œ ëª¨ë‘ ìƒì„± ê°€ëŠ¥
  */
-TCB* kCreateTask( QWORD qwFlags, void* pvMemoryAddress, QWORD qwMemorySize, 
+TCB* kCreateTask( QWORD qwFlags, void* pvMemoryAddress, QWORD qwMemorySize,
                   QWORD qwEntryPointAddress )
 {
     TCB* pstTask, * pstProcess;
     void* pvStackAddress;
     BOOL bPreviousFlag;
     
-    // ÀÓ°è ¿µ¿ª ½ÃÀÛ
-    bPreviousFlag = kLockForSystemData();    
+    // ì„ê³„ ì˜ì—­ ì‹œì‘
+    bPreviousFlag = kLockForSystemData();
     pstTask = kAllocateTCB();
     if( pstTask == NULL )
     {
-        // ÀÓ°è¿µ¿ª ³¡
+        // ì„ê³„ì˜ì—­ ë
         kUnlockForSystemData( bPreviousFlag );
         return NULL;
     }
 
-    // ÇöÀç ÇÁ·Î¼¼½º ¶Ç´Â ½º·¹µå°¡ ¼ÓÇÑ ÇÁ·Î¼¼½º¸¦ °Ë»ö
+    // í˜„ì¬ í”„ë¡œì„¸ìŠ¤ ë˜ëŠ” ìŠ¤ë ˆë“œê°€ ì†í•œ í”„ë¡œì„¸ìŠ¤ë¥¼ ê²€ìƒ‰
     pstProcess = kGetProcessByThread( kGetRunningTask() );
-    // ¸¸¾à ÇÁ·Î¼¼½º°¡ ¾ø´Ù¸é ¾Æ¹«·± ÀÛ¾÷µµ ÇÏÁö ¾ÊÀ½
+    // ë§Œì•½ í”„ë¡œì„¸ìŠ¤ê°€ ì—†ë‹¤ë©´ ì•„ë¬´ëŸ° ì‘ì—…ë„ í•˜ì§€ ì•ŠìŒ
     if( pstProcess == NULL )
     {
         kFreeTCB( pstTask->stLink.qwID );
-        // ÀÓ°è ¿µ¿ª ³¡
+        // ì„ê³„ ì˜ì—­ ë
         kUnlockForSystemData( bPreviousFlag );
         return NULL;
     }
 
-    // ½º·¹µå¸¦ »ı¼ºÇÏ´Â °æ¿ì¶ó¸é ³»°¡ ¼ÓÇÑ ÇÁ·Î¼¼½ºÀÇ ÀÚ½Ä ½º·¹µå ¸®½ºÆ®¿¡ ¿¬°áÇÔ
+    // ìŠ¤ë ˆë“œë¥¼ ìƒì„±í•˜ëŠ” ê²½ìš°ë¼ë©´ ë‚´ê°€ ì†í•œ í”„ë¡œì„¸ìŠ¤ì˜ ìì‹ ìŠ¤ë ˆë“œ ë¦¬ìŠ¤íŠ¸ì— ì—°ê²°í•¨
     if( qwFlags & TASK_FLAGS_THREAD )
     {
-        // ÇöÀç ½º·¹µåÀÇ ÇÁ·Î¼¼½º¸¦ Ã£¾Æ¼­ »ı¼ºÇÒ ½º·¹µå¿¡ ÇÁ·Î¼¼½º Á¤º¸¸¦ »ó¼Ó
+        // í˜„ì¬ ìŠ¤ë ˆë“œì˜ í”„ë¡œì„¸ìŠ¤ë¥¼ ì°¾ì•„ì„œ ìƒì„±í•  ìŠ¤ë ˆë“œì— í”„ë¡œì„¸ìŠ¤ ì •ë³´ë¥¼ ìƒì†
         pstTask->qwParentProcessID = pstProcess->stLink.qwID;
         pstTask->pvMemoryAddress = pstProcess->pvMemoryAddress;
         pstTask->qwMemorySize = pstProcess->qwMemorySize;
+
+		// initialize pass
+		//pstTask->pass = 0;
         
-        // ºÎ¸ğ ÇÁ·Î¼¼½ºÀÇ ÀÚ½Ä ½º·¹µå ¸®½ºÆ®¿¡ Ãß°¡
+        // ë¶€ëª¨ í”„ë¡œì„¸ìŠ¤ì˜ ìì‹ ìŠ¤ë ˆë“œ ë¦¬ìŠ¤íŠ¸ì— ì¶”ê°€
         kAddListToTail( &( pstProcess->stChildThreadList ), &( pstTask->stThreadLink ) );
     }
-    // ÇÁ·Î¼¼½º´Â ÆÄ¶ó¹ÌÅÍ·Î ³Ñ¾î¿Â °ªÀ» ±×´ë·Î ¼³Á¤
+    // í”„ë¡œì„¸ìŠ¤ëŠ” íŒŒë¼ë¯¸í„°ë¡œ ë„˜ì–´ì˜¨ ê°’ì„ ê·¸ëŒ€ë¡œ ì„¤ì •
     else
     {
         pstTask->qwParentProcessID = pstProcess->stLink.qwID;
@@ -136,54 +141,54 @@ TCB* kCreateTask( QWORD qwFlags, void* pvMemoryAddress, QWORD qwMemorySize,
         pstTask->qwMemorySize = qwMemorySize;
     }
     
-    // ½º·¹µåÀÇ ID¸¦ ÅÂ½ºÅ© ID¿Í µ¿ÀÏÇÏ°Ô ¼³Á¤
-    pstTask->stThreadLink.qwID = pstTask->stLink.qwID;    
-    // ÀÓ°è ¿µ¿ª ³¡
+    // ìŠ¤ë ˆë“œì˜ IDë¥¼ íƒœìŠ¤í¬ IDì™€ ë™ì¼í•˜ê²Œ ì„¤ì •
+    pstTask->stThreadLink.qwID = pstTask->stLink.qwID;
+    // ì„ê³„ ì˜ì—­ ë
     kUnlockForSystemData( bPreviousFlag );
     
-    // ÅÂ½ºÅ© ID·Î ½ºÅÃ ¾îµå·¹½º °è»ê, ÇÏÀ§ 32ºñÆ®°¡ ½ºÅÃ Ç®ÀÇ ¿ÀÇÁ¼Â ¿ªÇÒ ¼öÇà
-    pvStackAddress = ( void* ) ( TASK_STACKPOOLADDRESS + ( TASK_STACKSIZE * 
+    // íƒœìŠ¤í¬ IDë¡œ ìŠ¤íƒ ì–´ë“œë ˆìŠ¤ ê³„ì‚°, í•˜ìœ„ 32ë¹„íŠ¸ê°€ ìŠ¤íƒ í’€ì˜ ì˜¤í”„ì…‹ ì—­í•  ìˆ˜í–‰
+    pvStackAddress = ( void* ) ( TASK_STACKPOOLADDRESS + ( TASK_STACKSIZE *
             GETTCBOFFSET( pstTask->stLink.qwID ) ) );
     
-    // TCB¸¦ ¼³Á¤ÇÑ ÈÄ ÁØºñ ¸®½ºÆ®¿¡ »ğÀÔÇÏ¿© ½ºÄÉÁÙ¸µµÉ ¼ö ÀÖµµ·Ï ÇÔ
-    kSetUpTask( pstTask, qwFlags, qwEntryPointAddress, pvStackAddress, 
+    // TCBë¥¼ ì„¤ì •í•œ í›„ ì¤€ë¹„ ë¦¬ìŠ¤íŠ¸ì— ì‚½ì…í•˜ì—¬ ìŠ¤ì¼€ì¤„ë§ë  ìˆ˜ ìˆë„ë¡ í•¨
+    kSetUpTask( pstTask, qwFlags, qwEntryPointAddress, pvStackAddress,
             TASK_STACKSIZE );
 
-    // ÀÚ½Ä ½º·¹µå ¸®½ºÆ®¸¦ ÃÊ±âÈ­
+    // ìì‹ ìŠ¤ë ˆë“œ ë¦¬ìŠ¤íŠ¸ë¥¼ ì´ˆê¸°í™”
     kInitializeList( &( pstTask->stChildThreadList ) );
 
-    // ÀÓ°è ¿µ¿ª ½ÃÀÛ
+    // ì„ê³„ ì˜ì—­ ì‹œì‘
     bPreviousFlag = kLockForSystemData();
     
-    // ÅÂ½ºÅ©¸¦ ÁØºñ ¸®½ºÆ®¿¡ »ğÀÔ
+    // íƒœìŠ¤í¬ë¥¼ ì¤€ë¹„ ë¦¬ìŠ¤íŠ¸ì— ì‚½ì…
     kAddTaskToReadyList( pstTask );
     
-    // ÀÓ°è ¿µ¿ª ³¡
+    // ì„ê³„ ì˜ì—­ ë
     kUnlockForSystemData( bPreviousFlag );
     
     return pstTask;
 }
 
 /**
- *  ÆÄ¶ó¹ÌÅÍ¸¦ ÀÌ¿ëÇØ¼­ TCB¸¦ ¼³Á¤
+ *  íŒŒë¼ë¯¸í„°ë¥¼ ì´ìš©í•´ì„œ TCBë¥¼ ì„¤ì •
  */
 static void kSetUpTask( TCB* pstTCB, QWORD qwFlags, QWORD qwEntryPointAddress,
                  void* pvStackAddress, QWORD qwStackSize )
 {
-    // ÄÜÅØ½ºÆ® ÃÊ±âÈ­
+    // ì½˜í…ìŠ¤íŠ¸ ì´ˆê¸°í™”
     kMemSet( pstTCB->stContext.vqRegister, 0, sizeof( pstTCB->stContext.vqRegister ) );
     
-    // ½ºÅÃ¿¡ °ü·ÃµÈ RSP, RBP ·¹Áö½ºÅÍ ¼³Á¤
-    pstTCB->stContext.vqRegister[ TASK_RSPOFFSET ] = ( QWORD ) pvStackAddress + 
+    // ìŠ¤íƒì— ê´€ë ¨ëœ RSP, RBP ë ˆì§€ìŠ¤í„° ì„¤ì •
+    pstTCB->stContext.vqRegister[ TASK_RSPOFFSET ] = ( QWORD ) pvStackAddress +
             qwStackSize - 8;
-    pstTCB->stContext.vqRegister[ TASK_RBPOFFSET ] = ( QWORD ) pvStackAddress + 
+    pstTCB->stContext.vqRegister[ TASK_RBPOFFSET ] = ( QWORD ) pvStackAddress +
             qwStackSize - 8;
     
-    // Return Address ¿µ¿ª¿¡ kExitTask() ÇÔ¼öÀÇ ¾îµå·¹½º¸¦ »ğÀÔÇÏ¿© ÅÂ½ºÅ©ÀÇ ¿£Æ®¸®
-    // Æ÷ÀÎÆ® ÇÔ¼ö¸¦ ºüÁ®³ª°¨°ú µ¿½Ã¿¡ kExitTask() ÇÔ¼ö·Î ÀÌµ¿ÇÏµµ·Ï ÇÔ
+    // Return Address ì˜ì—­ì— kExitTask() í•¨ìˆ˜ì˜ ì–´ë“œë ˆìŠ¤ë¥¼ ì‚½ì…í•˜ì—¬ íƒœìŠ¤í¬ì˜ ì—”íŠ¸ë¦¬
+    // í¬ì¸íŠ¸ í•¨ìˆ˜ë¥¼ ë¹ ì ¸ë‚˜ê°ê³¼ ë™ì‹œì— kExitTask() í•¨ìˆ˜ë¡œ ì´ë™í•˜ë„ë¡ í•¨
     *( QWORD * ) ( ( QWORD ) pvStackAddress + qwStackSize - 8 ) = ( QWORD ) kExitTask;
 
-    // ¼¼±×¸ÕÆ® ¼¿·ºÅÍ ¼³Á¤
+    // ì„¸ê·¸ë¨¼íŠ¸ ì…€ë ‰í„° ì„¤ì •
     pstTCB->stContext.vqRegister[ TASK_CSOFFSET ] = GDT_KERNELCODESEGMENT;
     pstTCB->stContext.vqRegister[ TASK_DSOFFSET ] = GDT_KERNELDATASEGMENT;
     pstTCB->stContext.vqRegister[ TASK_ESOFFSET ] = GDT_KERNELDATASEGMENT;
@@ -191,42 +196,42 @@ static void kSetUpTask( TCB* pstTCB, QWORD qwFlags, QWORD qwEntryPointAddress,
     pstTCB->stContext.vqRegister[ TASK_GSOFFSET ] = GDT_KERNELDATASEGMENT;
     pstTCB->stContext.vqRegister[ TASK_SSOFFSET ] = GDT_KERNELDATASEGMENT;
     
-    // RIP ·¹Áö½ºÅÍ¿Í ÀÎÅÍ·´Æ® ÇÃ·¡±× ¼³Á¤
+    // RIP ë ˆì§€ìŠ¤í„°ì™€ ì¸í„°ëŸ½íŠ¸ í”Œë˜ê·¸ ì„¤ì •
     pstTCB->stContext.vqRegister[ TASK_RIPOFFSET ] = qwEntryPointAddress;
 
-    // RFLAGS ·¹Áö½ºÅÍÀÇ IF ºñÆ®(ºñÆ® 9)¸¦ 1·Î ¼³Á¤ÇÏ¿© ÀÎÅÍ·´Æ® È°¼ºÈ­
+    // RFLAGS ë ˆì§€ìŠ¤í„°ì˜ IF ë¹„íŠ¸(ë¹„íŠ¸ 9)ë¥¼ 1ë¡œ ì„¤ì •í•˜ì—¬ ì¸í„°ëŸ½íŠ¸ í™œì„±í™”
     pstTCB->stContext.vqRegister[ TASK_RFLAGSOFFSET ] |= 0x0200;
     
-    // ½ºÅÃ°ú ÇÃ·¡±× ÀúÀå
+    // ìŠ¤íƒê³¼ í”Œë˜ê·¸ ì €ì¥
     pstTCB->pvStackAddress = pvStackAddress;
     pstTCB->qwStackSize = qwStackSize;
     pstTCB->qwFlags = qwFlags;
 }
 
 //==============================================================================
-//  ½ºÄÉÁÙ·¯ °ü·Ã
+//  ìŠ¤ì¼€ì¤„ëŸ¬ ê´€ë ¨
 //==============================================================================
 /**
- *  ½ºÄÉÁÙ·¯¸¦ ÃÊ±âÈ­
- *      ½ºÄÉÁÙ·¯¸¦ ÃÊ±âÈ­ÇÏ´Âµ¥ ÇÊ¿äÇÑ TCB Ç®°ú init ÅÂ½ºÅ©µµ °°ÀÌ ÃÊ±âÈ­
+ *  ìŠ¤ì¼€ì¤„ëŸ¬ë¥¼ ì´ˆê¸°í™”
+ *      ìŠ¤ì¼€ì¤„ëŸ¬ë¥¼ ì´ˆê¸°í™”í•˜ëŠ”ë° í•„ìš”í•œ TCB í’€ê³¼ init íƒœìŠ¤í¬ë„ ê°™ì´ ì´ˆê¸°í™”
  */
 void kInitializeScheduler( void )
 {
     int i;
     TCB* pstTask;
     
-    // ÅÂ½ºÅ© Ç® ÃÊ±âÈ­
+    // íƒœìŠ¤í¬ í’€ ì´ˆê¸°í™”
     kInitializeTCBPool();
 
-    // ÁØºñ ¸®½ºÆ®¿Í ¿ì¼± ¼øÀ§º° ½ÇÇà È½¼ö¸¦ ÃÊ±âÈ­ÇÏ°í ´ë±â ¸®½ºÆ®µµ ÃÊ±âÈ­
+    // ì¤€ë¹„ ë¦¬ìŠ¤íŠ¸ì™€ ìš°ì„  ìˆœìœ„ë³„ ì‹¤í–‰ íšŸìˆ˜ë¥¼ ì´ˆê¸°í™”í•˜ê³  ëŒ€ê¸° ë¦¬ìŠ¤íŠ¸ë„ ì´ˆê¸°í™”
     for( i = 0 ; i < TASK_MAXREADYLISTCOUNT ; i++ )
     {
         kInitializeList( &( gs_stScheduler.vstReadyList[ i ] ) );
         gs_stScheduler.viExecuteCount[ i ] = 0;
-    }    
+    }
     kInitializeList( &( gs_stScheduler.stWaitList ) );
     
-    // TCB¸¦ ÇÒ´ç ¹Ş¾Æ ºÎÆÃÀ» ¼öÇàÇÑ ÅÂ½ºÅ©¸¦ Ä¿³Î ÃÖÃÊÀÇ ÇÁ·Î¼¼½º·Î ¼³Á¤
+    // TCBë¥¼ í• ë‹¹ ë°›ì•„ ë¶€íŒ…ì„ ìˆ˜í–‰í•œ íƒœìŠ¤í¬ë¥¼ ì»¤ë„ ìµœì´ˆì˜ í”„ë¡œì„¸ìŠ¤ë¡œ ì„¤ì •
     pstTask = kAllocateTCB();
     gs_stScheduler.pstRunningTask = pstTask;
     pstTask->qwFlags = TASK_FLAGS_HIGHEST | TASK_FLAGS_PROCESS | TASK_FLAGS_SYSTEM;
@@ -236,90 +241,90 @@ void kInitializeScheduler( void )
     pstTask->pvStackAddress = ( void* ) 0x600000;
     pstTask->qwStackSize = 0x100000;
     
-    // ÇÁ·Î¼¼¼­ »ç¿ë·üÀ» °è»êÇÏ´Âµ¥ »ç¿ëÇÏ´Â ÀÚ·á±¸Á¶ ÃÊ±âÈ­
+    // í”„ë¡œì„¸ì„œ ì‚¬ìš©ë¥ ì„ ê³„ì‚°í•˜ëŠ”ë° ì‚¬ìš©í•˜ëŠ” ìë£Œêµ¬ì¡° ì´ˆê¸°í™”
     gs_stScheduler.qwSpendProcessorTimeInIdleTask = 0;
     gs_stScheduler.qwProcessorLoad = 0;
 }
 
 /**
- *  ÇöÀç ¼öÇà ÁßÀÎ ÅÂ½ºÅ©¸¦ ¼³Á¤
+ *  í˜„ì¬ ìˆ˜í–‰ ì¤‘ì¸ íƒœìŠ¤í¬ë¥¼ ì„¤ì •
  */
 void kSetRunningTask( TCB* pstTask )
 {
     BOOL bPreviousFlag;
     
-    // ÀÓ°è ¿µ¿ª ½ÃÀÛ
+    // ì„ê³„ ì˜ì—­ ì‹œì‘
     bPreviousFlag = kLockForSystemData();
 
     gs_stScheduler.pstRunningTask = pstTask;
 
-    // ÀÓ°è ¿µ¿ª ³¡
+    // ì„ê³„ ì˜ì—­ ë
     kUnlockForSystemData( bPreviousFlag );
 }
 
 /**
- *  ÇöÀç ¼öÇà ÁßÀÎ ÅÂ½ºÅ©¸¦ ¹İÈ¯
+ *  í˜„ì¬ ìˆ˜í–‰ ì¤‘ì¸ íƒœìŠ¤í¬ë¥¼ ë°˜í™˜
  */
 TCB* kGetRunningTask( void )
 {
     BOOL bPreviousFlag;
     TCB* pstRunningTask;
     
-    // ÀÓ°è ¿µ¿ª ½ÃÀÛ
+    // ì„ê³„ ì˜ì—­ ì‹œì‘
     bPreviousFlag = kLockForSystemData();
     
     pstRunningTask = gs_stScheduler.pstRunningTask;
     
-    // ÀÓ°è ¿µ¿ª ³¡
+    // ì„ê³„ ì˜ì—­ ë
     kUnlockForSystemData( bPreviousFlag );
 
     return pstRunningTask;
 }
 
 // /**
-//  *  ÅÂ½ºÅ© ¸®½ºÆ®¿¡¼­ ´ÙÀ½À¸·Î ½ÇÇàÇÒ ÅÂ½ºÅ©¸¦ ¾òÀ½ (Multilevel Queue Scheduler)
+//  *  íƒœìŠ¤í¬ ë¦¬ìŠ¤íŠ¸ì—ì„œ ë‹¤ìŒìœ¼ë¡œ ì‹¤í–‰í•  íƒœìŠ¤í¬ë¥¼ ì–»ìŒ (Multilevel Queue Scheduler)
 //  */
 // static TCB* kGetNextTaskToRun( void )
 // {
 //     TCB* pstTarget = NULL;
 //     int iTaskCount, i, j;
     
-//     // Å¥¿¡ ÅÂ½ºÅ©°¡ ÀÖÀ¸³ª ¸ğµç Å¥ÀÇ ÅÂ½ºÅ©°¡ 1È¸¾¿ ½ÇÇàµÈ °æ¿ì, ¸ğµç Å¥°¡ ÇÁ·Î¼¼¼­¸¦
-//     // ¾çº¸ÇÏ¿© ÅÂ½ºÅ©¸¦ ¼±ÅÃÇÏÁö ¸øÇÒ ¼ö ÀÖÀ¸´Ï NULLÀÏ °æ¿ì ÇÑ¹ø ´õ ¼öÇà
+//     // íì— íƒœìŠ¤í¬ê°€ ìˆìœ¼ë‚˜ ëª¨ë“  íì˜ íƒœìŠ¤í¬ê°€ 1íšŒì”© ì‹¤í–‰ëœ ê²½ìš°, ëª¨ë“  íê°€ í”„ë¡œì„¸ì„œë¥¼
+//     // ì–‘ë³´í•˜ì—¬ íƒœìŠ¤í¬ë¥¼ ì„ íƒí•˜ì§€ ëª»í•  ìˆ˜ ìˆìœ¼ë‹ˆ NULLì¼ ê²½ìš° í•œë²ˆ ë” ìˆ˜í–‰
 //     for( j = 0 ; j < 2 ; j++ )
 //     {
-//         // ³ôÀº ¿ì¼± ¼øÀ§¿¡¼­ ³·Àº ¿ì¼± ¼øÀ§±îÁö ¸®½ºÆ®¸¦ È®ÀÎÇÏ¿© ½ºÄÉÁÙ¸µÇÒ ÅÂ½ºÅ©¸¦ ¼±ÅÃ
+//         // ë†’ì€ ìš°ì„  ìˆœìœ„ì—ì„œ ë‚®ì€ ìš°ì„  ìˆœìœ„ê¹Œì§€ ë¦¬ìŠ¤íŠ¸ë¥¼ í™•ì¸í•˜ì—¬ ìŠ¤ì¼€ì¤„ë§í•  íƒœìŠ¤í¬ë¥¼ ì„ íƒ
 //         for( i = 0 ; i < TASK_MAXREADYLISTCOUNT ; i++ )
 //         {
 //             iTaskCount = kGetListCount( &( gs_stScheduler.vstReadyList[ i ] ) );
             
-//             // ¸¸¾à ½ÇÇàÇÑ È½¼öº¸´Ù ¸®½ºÆ®ÀÇ ÅÂ½ºÅ© ¼ö°¡ ´õ ¸¹À¸¸é ÇöÀç ¿ì¼± ¼øÀ§ÀÇ
-//             // ÅÂ½ºÅ©¸¦ ½ÇÇàÇÔ
+//             // ë§Œì•½ ì‹¤í–‰í•œ íšŸìˆ˜ë³´ë‹¤ ë¦¬ìŠ¤íŠ¸ì˜ íƒœìŠ¤í¬ ìˆ˜ê°€ ë” ë§ìœ¼ë©´ í˜„ì¬ ìš°ì„  ìˆœìœ„ì˜
+//             // íƒœìŠ¤í¬ë¥¼ ì‹¤í–‰í•¨
 //             if( gs_stScheduler.viExecuteCount[ i ] < iTaskCount )
 //             {
-//                 pstTarget = ( TCB* ) kRemoveListFromHeader( 
+//                 pstTarget = ( TCB* ) kRemoveListFromHeader(
 //                                         &( gs_stScheduler.vstReadyList[ i ] ) );
 //                 gs_stScheduler.viExecuteCount[ i ]++;
-//                 break;            
+//                 break;
 //             }
-//             // ¸¸¾à ½ÇÇàÇÑ È½¼ö°¡ ´õ ¸¹À¸¸é ½ÇÇà È½¼ö¸¦ ÃÊ±âÈ­ÇÏ°í ´ÙÀ½ ¿ì¼± ¼øÀ§·Î ¾çº¸ÇÔ
+//             // ë§Œì•½ ì‹¤í–‰í•œ íšŸìˆ˜ê°€ ë” ë§ìœ¼ë©´ ì‹¤í–‰ íšŸìˆ˜ë¥¼ ì´ˆê¸°í™”í•˜ê³  ë‹¤ìŒ ìš°ì„  ìˆœìœ„ë¡œ ì–‘ë³´í•¨
 //             else
 //             {
 //                 gs_stScheduler.viExecuteCount[ i ] = 0;
 //             }
 //         }
         
-//         // ¸¸¾à ¼öÇàÇÒ ÅÂ½ºÅ©¸¦ Ã£¾ÒÀ¸¸é Á¾·á
+//         // ë§Œì•½ ìˆ˜í–‰í•  íƒœìŠ¤í¬ë¥¼ ì°¾ì•˜ìœ¼ë©´ ì¢…ë£Œ
 //         if( pstTarget != NULL )
 //         {
 //             break;
 //         }
-//     }    
+//     }
 //     return pstTarget;
 // }
 
 /**
- *  ÅÂ½ºÅ© ¸®½ºÆ®¿¡¼­ ´ÙÀ½À¸·Î ½ÇÇàÇÒ ÅÂ½ºÅ©¸¦ ¾òÀ½
+ *  íƒœìŠ¤í¬ ë¦¬ìŠ¤íŠ¸ì—ì„œ ë‹¤ìŒìœ¼ë¡œ ì‹¤í–‰í•  íƒœìŠ¤í¬ë¥¼ ì–»ìŒ
  */
 static TCB* kGetNextTaskToRun( void )
 {
@@ -327,21 +332,21 @@ static TCB* kGetNextTaskToRun( void )
     int iTaskCount, i;
     QWORD totaltickets = 0;
 
-    // ÃÑ Æ¼ÄÏ ¼ö ±¸ÇÏ±â
+    // ì´ í‹°ì¼“ ìˆ˜ êµ¬í•˜ê¸°
     for(i = 0; i<TASK_MAXREADYLISTCOUNT; i++){
         iTaskCount = kGetListCount(&(gs_stScheduler.vstReadyList[i]));
         totaltickets += (iTaskCount * getTicket(i));
     }
     
-    // Lottery Scheduler¸¦ ÀÌ¿ë
-    pstTarget = kGetNextTaskToRunbyLottery(totaltickets);
-    // Stride Scheduler¸¦ ÀÌ¿ë
-    //pstTarget = kGetNextTaskToRunbyStride(totaltickets);
+    // Lottery Schedulerë¥¼ ì´ìš©
+    //pstTarget = kGetNextTaskToRunbyLottery(totaltickets);
+    // Stride Schedulerë¥¼ ì´ìš©
+    pstTarget = kGetNextTaskToRunbyStride();
 
     return pstTarget;
 }
 
-// Lottery Scheduler¸¦ ÀÌ¿ëÇÑ kGetNextTaskToRun
+// Lottery Schedulerë¥¼ ì´ìš©í•œ kGetNextTaskToRun
 static TCB* kGetNextTaskToRunbyLottery(int totaltickets)
 {
     TCB* pstTarget = NULL;
@@ -349,10 +354,10 @@ static TCB* kGetNextTaskToRunbyLottery(int totaltickets)
     int iTaskCount, i;
     QWORD counter = 0, winner;
     
-    // ·£´ı °ª »Ì±â
+    // ëœë¤ ê°’ ë½‘ê¸°
     winner = getrandom(totaltickets);
 
-    // task¸¦ µ¹¸ç ticket¼ö¸¦ È®ÀÎÇÏ¸ç counter¿¡ ´õÇØÁÖ¸é¼­ counter>=winner°¡ µÇ´Â task ¼öÇà
+    // taskë¥¼ ëŒë©° ticketìˆ˜ë¥¼ í™•ì¸í•˜ë©° counterì— ë”í•´ì£¼ë©´ì„œ counter>=winnerê°€ ë˜ëŠ” task ìˆ˜í–‰
     for( i = 0 ; i < TASK_MAXREADYLISTCOUNT ; i++ )
     {
         iTaskCount = kGetListCount( &( gs_stScheduler.vstReadyList[ i ] ) );
@@ -364,11 +369,11 @@ static TCB* kGetNextTaskToRunbyLottery(int totaltickets)
             counter += (current->ticket);
             if(counter >= winner){
                 pstTarget = kRemoveList(&(gs_stScheduler.vstReadyList[i]), current->stLink.qwID);
-                break; 
+                break;
             }
             current = kGetNextFromList(&( gs_stScheduler.vstReadyList[ i ] ), current);
         }
-        // ¸¸¾à ¼öÇàÇÒ ÅÂ½ºÅ©¸¦ Ã£¾ÒÀ¸¸é Á¾·á
+        // ë§Œì•½ ìˆ˜í–‰í•  íƒœìŠ¤í¬ë¥¼ ì°¾ì•˜ìœ¼ë©´ ì¢…ë£Œ
         if( pstTarget != NULL ){
             break;
         }
@@ -376,11 +381,12 @@ static TCB* kGetNextTaskToRunbyLottery(int totaltickets)
     return pstTarget;
 }
 
-// ³­¼ö¸¦ ¹ß»ı½ÃÅ°±â À§ÇÑ º¯¼ö
+
+// ë‚œìˆ˜ë¥¼ ë°œìƒì‹œí‚¤ê¸° ìœ„í•œ ë³€ìˆ˜
 static volatile QWORD gs_qwRandomValue = 0;
 
 /**
- *  ÀÓÀÇÀÇ ³­¼ö¸¦ ¹İÈ¯
+ *  ì„ì˜ì˜ ë‚œìˆ˜ë¥¼ ë°˜í™˜
  */
 QWORD getrandom(int final)
 {
@@ -388,18 +394,55 @@ QWORD getrandom(int final)
     return gs_qwRandomValue % (final+1);
 }
 
-// Stride Scheduler¸¦ ÀÌ¿ëÇÑ kGetNextTaskToRun
-static TCB* kGetNextTaskToRunbyStride(int totaltickets)
+// Stride Schedulerë¥¼ ì´ìš©í•œ kGetNextTaskToRun
+static TCB* kGetNextTaskToRunbyStride(void)
 {
     TCB* pstTarget = NULL;
+    TCB* current = NULL;
     int iTaskCount, i;
-
+    QWORD min_pass;
+	int list_index;     // min_pass ë¥¼ ê°€ì§„ Taskì˜ í index ì €ì¥ì„ ìœ„í•´
+    BOOL is_first = TRUE;
     
+    // ëª¨ë“  Taskë¥¼ ëŒë©° ê°€ì¥ ì‘ì€ pass ê°’ì„ ê°€ì§„ Taskë¥¼ ì°¾ëŠ”ë‹¤.  ê°€ì¥ ë†’ì€ ìš°ì„ ìˆœìœ„ì˜ í ë¶€í„° íƒìƒ‰
+    for( i = 0 ; i < TASK_MAXREADYLISTCOUNT ; i++ )
+    {
+        iTaskCount = kGetListCount( &( gs_stScheduler.vstReadyList[ i ] ) );
+        if(iTaskCount == 0) continue;
+
+        current = (TCB*)kGetHeaderFromList(&( gs_stScheduler.vstReadyList[ i ] ));
+   
+        // min_pass ì™€ pstTarget ì„ ì²«ë²ˆì¨°ë¡œ ê²€ì‚¬í•˜ëŠ” Taskë¡œ ì´ˆê¸°í™”
+	    if(is_first){
+			list_index = i;
+	        min_pass = current->pass;
+	        pstTarget = current;
+	        is_first = FALSE;
+		}
+
+        while(current){
+            // í˜„ì¬ min_pass ë³´ë‹¤ ë” ì‘ì€ passê°’ ë°œê²¬ ì‹œ í index ì™€ Task ê¸°ì–µ
+            if(min_pass > current->pass){
+				list_index = i;
+                min_pass = current->pass;
+                pstTarget = current;
+            }
+            // í˜„ì¬ íì˜ Tail ë¶€ë¶„ê¹Œì§€ ê²€ì‚¬í–ˆì„ ì‹œ whileë¬¸ íƒˆì¶œ
+			if(current == kGetTailFromList(&(gs_stScheduler.vstReadyList[i])))
+				break;
+            current = kGetNextFromList(&( gs_stScheduler.vstReadyList[ i ] ), current);
+        }
+    }
+    if(pstTarget != NULL){
+        // stride ë§Œí¼ Taskì˜ passê°’ ì¦ê°€
+        pstTarget->pass = pstTarget->pass + pstTarget->stride;
+		pstTarget = kRemoveList(&(gs_stScheduler.vstReadyList[list_index]), pstTarget->stLink.qwID);
+    }
     return pstTarget;
 }
 
 /**
- *  ÅÂ½ºÅ©¸¦ ½ºÄÉÁÙ·¯ÀÇ ÁØºñ ¸®½ºÆ®¿¡ »ğÀÔ
+ *  íƒœìŠ¤í¬ë¥¼ ìŠ¤ì¼€ì¤„ëŸ¬ì˜ ì¤€ë¹„ ë¦¬ìŠ¤íŠ¸ì— ì‚½ì…
  */
 static BOOL kAddTaskToReadyList( TCB* pstTask )
 {
@@ -416,15 +459,17 @@ static BOOL kAddTaskToReadyList( TCB* pstTask )
         return FALSE;
     }
 
-    // ticket ¿ì¼±¼øÀ§¿¡ µû¶ó ºÎ¿©
+    // ticket ìš°ì„ ìˆœìœ„ì— ë”°ë¼ ë¶€ì—¬
     pstTask->ticket = getTicket(bPriority);
+    //ë¶€ì—¬ëœ ticketì— ë”°ë¼ stride ë¶€ì—¬
+    pstTask->stride = (QWORD)STRIDE_OPERAND / pstTask->ticket;
 
     kAddListToTail( &( gs_stScheduler.vstReadyList[ bPriority ] ), pstTask );
     return TRUE;
 }
 
 /**
- *  ¿ì¼±¼øÀ§¿¡ µû¶ó ticket ÁÖ¾îÁü
+ *  ìš°ì„ ìˆœìœ„ì— ë”°ë¼ ticket ì£¼ì–´ì§
  */
 QWORD getTicket(BYTE bPriority){
     QWORD ticket;
@@ -450,40 +495,40 @@ QWORD getTicket(BYTE bPriority){
 }
 
 /**
- *  ÁØºñ Å¥¿¡¼­ ÅÂ½ºÅ©¸¦ Á¦°Å
+ *  ì¤€ë¹„ íì—ì„œ íƒœìŠ¤í¬ë¥¼ ì œê±°
  */
 static TCB* kRemoveTaskFromReadyList( QWORD qwTaskID )
 {
     TCB* pstTarget;
     BYTE bPriority;
     
-    // ÅÂ½ºÅ© ID°¡ À¯È¿ÇÏÁö ¾ÊÀ¸¸é ½ÇÆĞ
+    // íƒœìŠ¤í¬ IDê°€ ìœ íš¨í•˜ì§€ ì•Šìœ¼ë©´ ì‹¤íŒ¨
     if( GETTCBOFFSET( qwTaskID ) >= TASK_MAXCOUNT )
     {
         return NULL;
     }
     
-    // TCB Ç®¿¡¼­ ÇØ´ç ÅÂ½ºÅ©ÀÇ TCB¸¦ Ã£¾Æ ½ÇÁ¦·Î ID°¡ ÀÏÄ¡ÇÏ´Â°¡ È®ÀÎ
+    // TCB í’€ì—ì„œ í•´ë‹¹ íƒœìŠ¤í¬ì˜ TCBë¥¼ ì°¾ì•„ ì‹¤ì œë¡œ IDê°€ ì¼ì¹˜í•˜ëŠ”ê°€ í™•ì¸
     pstTarget = &( gs_stTCBPoolManager.pstStartAddress[ GETTCBOFFSET( qwTaskID ) ] );
     if( pstTarget->stLink.qwID != qwTaskID )
     {
         return NULL;
     }
     
-    // ÅÂ½ºÅ©°¡ Á¸ÀçÇÏ´Â ÁØºñ ¸®½ºÆ®¿¡¼­ ÅÂ½ºÅ© Á¦°Å
+    // íƒœìŠ¤í¬ê°€ ì¡´ì¬í•˜ëŠ” ì¤€ë¹„ ë¦¬ìŠ¤íŠ¸ì—ì„œ íƒœìŠ¤í¬ ì œê±°
     bPriority = GETPRIORITY( pstTarget->qwFlags );
     if( bPriority >= TASK_MAXREADYLISTCOUNT )
     {
         return NULL;
-    }    
+    }
 
-    pstTarget = kRemoveList( &( gs_stScheduler.vstReadyList[ bPriority ]), 
+    pstTarget = kRemoveList( &( gs_stScheduler.vstReadyList[ bPriority ]),
                      qwTaskID );
     return pstTarget;
 }
 
 /**
- *  ÅÂ½ºÅ©ÀÇ ¿ì¼± ¼øÀ§¸¦ º¯°æÇÔ
+ *  íƒœìŠ¤í¬ì˜ ìš°ì„  ìˆœìœ„ë¥¼ ë³€ê²½í•¨
  */
 BOOL kChangePriority( QWORD qwTaskID, BYTE bPriority )
 {
@@ -495,89 +540,92 @@ BOOL kChangePriority( QWORD qwTaskID, BYTE bPriority )
         return FALSE;
     }
     
-    // ÀÓ°è ¿µ¿ª ½ÃÀÛ
+    // ì„ê³„ ì˜ì—­ ì‹œì‘
     bPreviousFlag = kLockForSystemData();
     
-    // ÇöÀç ½ÇÇàÁßÀÎ ÅÂ½ºÅ©ÀÌ¸é ¿ì¼± ¼øÀ§¸¸ º¯°æ
-    // PIT ÄÁÆ®·Ñ·¯ÀÇ ÀÎÅÍ·´Æ®(IRQ 0)°¡ ¹ß»ıÇÏ¿© ÅÂ½ºÅ© ÀüÈ¯ÀÌ ¼öÇàµÉ ¶§ º¯°æµÈ 
-    // ¿ì¼± ¼øÀ§ÀÇ ¸®½ºÆ®·Î ÀÌµ¿
+    // í˜„ì¬ ì‹¤í–‰ì¤‘ì¸ íƒœìŠ¤í¬ì´ë©´ ìš°ì„  ìˆœìœ„ë§Œ ë³€ê²½
+    // PIT ì»¨íŠ¸ë¡¤ëŸ¬ì˜ ì¸í„°ëŸ½íŠ¸(IRQ 0)ê°€ ë°œìƒí•˜ì—¬ íƒœìŠ¤í¬ ì „í™˜ì´ ìˆ˜í–‰ë  ë•Œ ë³€ê²½ëœ
+    // ìš°ì„  ìˆœìœ„ì˜ ë¦¬ìŠ¤íŠ¸ë¡œ ì´ë™
     pstTarget = gs_stScheduler.pstRunningTask;
     if( pstTarget->stLink.qwID == qwTaskID )
     {
         SETPRIORITY( pstTarget->qwFlags, bPriority );
         pstTarget->ticket = getTicket(bPriority);
+        pstTarget->stride = (QWORD)STRIDE_OPERAND / pstTarget->ticket;
     }
-    // ½ÇÇàÁßÀÎ ÅÂ½ºÅ©°¡ ¾Æ´Ï¸é ÁØºñ ¸®½ºÆ®¿¡¼­ Ã£¾Æ¼­ ÇØ´ç ¿ì¼± ¼øÀ§ÀÇ ¸®½ºÆ®·Î ÀÌµ¿
+    // ì‹¤í–‰ì¤‘ì¸ íƒœìŠ¤í¬ê°€ ì•„ë‹ˆë©´ ì¤€ë¹„ ë¦¬ìŠ¤íŠ¸ì—ì„œ ì°¾ì•„ì„œ í•´ë‹¹ ìš°ì„  ìˆœìœ„ì˜ ë¦¬ìŠ¤íŠ¸ë¡œ ì´ë™
     else
     {
-        // ÁØºñ ¸®½ºÆ®¿¡¼­ ÅÂ½ºÅ©¸¦ Ã£Áö ¸øÇÏ¸é Á÷Á¢ ÅÂ½ºÅ©¸¦ Ã£¾Æ¼­ ¿ì¼± ¼øÀ§¸¦ ¼³Á¤
+        // ì¤€ë¹„ ë¦¬ìŠ¤íŠ¸ì—ì„œ íƒœìŠ¤í¬ë¥¼ ì°¾ì§€ ëª»í•˜ë©´ ì§ì ‘ íƒœìŠ¤í¬ë¥¼ ì°¾ì•„ì„œ ìš°ì„  ìˆœìœ„ë¥¼ ì„¤ì •
         pstTarget = kRemoveTaskFromReadyList( qwTaskID );
         if( pstTarget == NULL )
         {
-            // ÅÂ½ºÅ© ID·Î Á÷Á¢ Ã£¾Æ¼­ ¼³Á¤
+            // íƒœìŠ¤í¬ IDë¡œ ì§ì ‘ ì°¾ì•„ì„œ ì„¤ì •
             pstTarget = kGetTCBInTCBPool( GETTCBOFFSET( qwTaskID ) );
             if( pstTarget != NULL )
             {
-                // ¿ì¼± ¼øÀ§¸¦ ¼³Á¤
+                // ìš°ì„  ìˆœìœ„ë¥¼ ì„¤ì •
                 SETPRIORITY( pstTarget->qwFlags, bPriority );
                 pstTarget->ticket = getTicket(bPriority);
+				pstTarget->stride = (QWORD)STRIDE_OPERAND / pstTarget->ticket;
             }
         }
         else
         {
-            // ¿ì¼± ¼øÀ§¸¦ ¼³Á¤ÇÏ°í ÁØºñ ¸®½ºÆ®¿¡ ´Ù½Ã »ğÀÔ
+            // ìš°ì„  ìˆœìœ„ë¥¼ ì„¤ì •í•˜ê³  ì¤€ë¹„ ë¦¬ìŠ¤íŠ¸ì— ë‹¤ì‹œ ì‚½ì…
             SETPRIORITY( pstTarget->qwFlags, bPriority );
             pstTarget->ticket = getTicket(bPriority);
+			pstTarget->stride = (QWORD)STRIDE_OPERAND / pstTarget->ticket;
             kAddTaskToReadyList( pstTarget );
         }
     }
-    // ÀÓ°è ¿µ¿ª ³¡
+    // ì„ê³„ ì˜ì—­ ë
     kUnlockForSystemData( bPreviousFlag );
-    return TRUE;    
+    return TRUE;
 }
 
 /**
- *  ´Ù¸¥ ÅÂ½ºÅ©¸¦ Ã£¾Æ¼­ ÀüÈ¯
- *      ÀÎÅÍ·´Æ®³ª ¿¹¿Ü°¡ ¹ß»ıÇßÀ» ¶§ È£ÃâÇÏ¸é ¾ÈµÊ
+ *  ë‹¤ë¥¸ íƒœìŠ¤í¬ë¥¼ ì°¾ì•„ì„œ ì „í™˜
+ *      ì¸í„°ëŸ½íŠ¸ë‚˜ ì˜ˆì™¸ê°€ ë°œìƒí–ˆì„ ë•Œ í˜¸ì¶œí•˜ë©´ ì•ˆë¨
  */
 void kSchedule( void )
 {
     TCB* pstRunningTask, * pstNextTask;
     BOOL bPreviousFlag;
     
-    // ÀüÈ¯ÇÒ ÅÂ½ºÅ©°¡ ÀÖ¾î¾ß ÇÔ
+    // ì „í™˜í•  íƒœìŠ¤í¬ê°€ ìˆì–´ì•¼ í•¨
     if( kGetReadyTaskCount() < 1 )
     {
         return ;
     }
     
-    // ÀüÈ¯ÇÏ´Â µµÁß ÀÎÅÍ·´Æ®°¡ ¹ß»ıÇÏ¿© ÅÂ½ºÅ© ÀüÈ¯ÀÌ ¶Ç ÀÏ¾î³ª¸é °ï¶õÇÏ¹Ç·Î ÀüÈ¯ÇÏ´Â 
-    // µ¿¾È ÀÎÅÍ·´Æ®°¡ ¹ß»ıÇÏÁö ¸øÇÏµµ·Ï ¼³Á¤
-    // ÀÓ°è ¿µ¿ª ½ÃÀÛ
+    // ì „í™˜í•˜ëŠ” ë„ì¤‘ ì¸í„°ëŸ½íŠ¸ê°€ ë°œìƒí•˜ì—¬ íƒœìŠ¤í¬ ì „í™˜ì´ ë˜ ì¼ì–´ë‚˜ë©´ ê³¤ë€í•˜ë¯€ë¡œ ì „í™˜í•˜ëŠ”
+    // ë™ì•ˆ ì¸í„°ëŸ½íŠ¸ê°€ ë°œìƒí•˜ì§€ ëª»í•˜ë„ë¡ ì„¤ì •
+    // ì„ê³„ ì˜ì—­ ì‹œì‘
     bPreviousFlag = kLockForSystemData();
     
-    // ½ÇÇàÇÒ ´ÙÀ½ ÅÂ½ºÅ©¸¦ ¾òÀ½
+    // ì‹¤í–‰í•  ë‹¤ìŒ íƒœìŠ¤í¬ë¥¼ ì–»ìŒ
     pstNextTask = kGetNextTaskToRun();
     if( pstNextTask == NULL )
     {
-        // ÀÓ°è ¿µ¿ª ³¡
+        // ì„ê³„ ì˜ì—­ ë
         kUnlockForSystemData( bPreviousFlag );
         return ;
     }
     
-    // ÇöÀç ¼öÇàÁßÀÎ ÅÂ½ºÅ©ÀÇ Á¤º¸¸¦ ¼öÁ¤ÇÑ µÚ ÄÜÅØ½ºÆ® ÀüÈ¯
-    pstRunningTask = gs_stScheduler.pstRunningTask; 
+    // í˜„ì¬ ìˆ˜í–‰ì¤‘ì¸ íƒœìŠ¤í¬ì˜ ì •ë³´ë¥¼ ìˆ˜ì •í•œ ë’¤ ì½˜í…ìŠ¤íŠ¸ ì „í™˜
+    pstRunningTask = gs_stScheduler.pstRunningTask;
     gs_stScheduler.pstRunningTask = pstNextTask;
     
-    // À¯ÈŞ ÅÂ½ºÅ©¿¡¼­ ÀüÈ¯µÇ¾ú´Ù¸é »ç¿ëÇÑ ÇÁ·Î¼¼¼­ ½Ã°£À» Áõ°¡½ÃÅ´
+    // ìœ íœ´ íƒœìŠ¤í¬ì—ì„œ ì „í™˜ë˜ì—ˆë‹¤ë©´ ì‚¬ìš©í•œ í”„ë¡œì„¸ì„œ ì‹œê°„ì„ ì¦ê°€ì‹œí‚´
     if( ( pstRunningTask->qwFlags & TASK_FLAGS_IDLE ) == TASK_FLAGS_IDLE )
     {
-        gs_stScheduler.qwSpendProcessorTimeInIdleTask += 
+        gs_stScheduler.qwSpendProcessorTimeInIdleTask +=
             TASK_PROCESSORTIME - gs_stScheduler.iProcessorTime;
     }
     
-    // ÅÂ½ºÅ© Á¾·á ÇÃ·¡±×°¡ ¼³Á¤µÈ °æ¿ì ÄÜÅØ½ºÆ®¸¦ ÀúÀåÇÒ ÇÊ¿ä°¡ ¾øÀ¸¹Ç·Î, ´ë±â ¸®½ºÆ®¿¡
-    // »ğÀÔÇÏ°í ÄÜÅØ½ºÆ® ÀüÈ¯
+    // íƒœìŠ¤í¬ ì¢…ë£Œ í”Œë˜ê·¸ê°€ ì„¤ì •ëœ ê²½ìš° ì½˜í…ìŠ¤íŠ¸ë¥¼ ì €ì¥í•  í•„ìš”ê°€ ì—†ìœ¼ë¯€ë¡œ, ëŒ€ê¸° ë¦¬ìŠ¤íŠ¸ì—
+    // ì‚½ì…í•˜ê³  ì½˜í…ìŠ¤íŠ¸ ì „í™˜
     if( pstRunningTask->qwFlags & TASK_FLAGS_ENDTASK )
     {
         kAddListToTail( &( gs_stScheduler.stWaitList ), pstRunningTask );
@@ -589,16 +637,16 @@ void kSchedule( void )
         kSwitchContext( &( pstRunningTask->stContext ), &( pstNextTask->stContext ) );
     }
 
-    // ÇÁ·Î¼¼¼­ »ç¿ë ½Ã°£À» ¾÷µ¥ÀÌÆ®
+    // í”„ë¡œì„¸ì„œ ì‚¬ìš© ì‹œê°„ì„ ì—…ë°ì´íŠ¸
     gs_stScheduler.iProcessorTime = TASK_PROCESSORTIME;
 
-    // ÀÓ°è ¿µ¿ª ³¡
+    // ì„ê³„ ì˜ì—­ ë
     kUnlockForSystemData( bPreviousFlag );
 }
 
 /**
- *  ÀÎÅÍ·´Æ®°¡ ¹ß»ıÇßÀ» ¶§, ´Ù¸¥ ÅÂ½ºÅ©¸¦ Ã£¾Æ ÀüÈ¯
- *      ¹İµå½Ã ÀÎÅÍ·´Æ®³ª ¿¹¿Ü°¡ ¹ß»ıÇßÀ» ¶§ È£ÃâÇØ¾ß ÇÔ
+ *  ì¸í„°ëŸ½íŠ¸ê°€ ë°œìƒí–ˆì„ ë•Œ, ë‹¤ë¥¸ íƒœìŠ¤í¬ë¥¼ ì°¾ì•„ ì „í™˜
+ *      ë°˜ë“œì‹œ ì¸í„°ëŸ½íŠ¸ë‚˜ ì˜ˆì™¸ê°€ ë°œìƒí–ˆì„ ë•Œ í˜¸ì¶œí•´ì•¼ í•¨
  */
 BOOL kScheduleInInterrupt( void )
 {
@@ -606,60 +654,60 @@ BOOL kScheduleInInterrupt( void )
     char* pcContextAddress;
     BOOL bPreviousFlag;
     
-    // ÀÓ°è ¿µ¿ª ½ÃÀÛ
+    // ì„ê³„ ì˜ì—­ ì‹œì‘
     bPreviousFlag = kLockForSystemData();
     
-    // ÀüÈ¯ÇÒ ÅÂ½ºÅ©°¡ ¾øÀ¸¸é Á¾·á
+    // ì „í™˜í•  íƒœìŠ¤í¬ê°€ ì—†ìœ¼ë©´ ì¢…ë£Œ
     pstNextTask = kGetNextTaskToRun();
     if( pstNextTask == NULL )
     {
-        // ÀÓ°è ¿µ¿ª ³¡
+        // ì„ê³„ ì˜ì—­ ë
         kUnlockForSystemData( bPreviousFlag );
         return FALSE;
     }
     
     //==========================================================================
-    //  ÅÂ½ºÅ© ÀüÈ¯ Ã³¸®   
-    //      ÀÎÅÍ·´Æ® ÇÚµé·¯¿¡¼­ ÀúÀåÇÑ ÄÜÅØ½ºÆ®¸¦ ´Ù¸¥ ÄÜÅØ½ºÆ®·Î µ¤¾î¾²´Â ¹æ¹ıÀ¸·Î Ã³¸®
+    //  íƒœìŠ¤í¬ ì „í™˜ ì²˜ë¦¬
+    //      ì¸í„°ëŸ½íŠ¸ í•¸ë“¤ëŸ¬ì—ì„œ ì €ì¥í•œ ì½˜í…ìŠ¤íŠ¸ë¥¼ ë‹¤ë¥¸ ì½˜í…ìŠ¤íŠ¸ë¡œ ë®ì–´ì“°ëŠ” ë°©ë²•ìœ¼ë¡œ ì²˜ë¦¬
     //==========================================================================
     pcContextAddress = ( char* ) IST_STARTADDRESS + IST_SIZE - sizeof( CONTEXT );
     
-    // ÇöÀç ¼öÇàÁßÀÎ ÅÂ½ºÅ©ÀÇ Á¤º¸¸¦ ¼öÁ¤ÇÑ µÚ ÄÜÅØ½ºÆ® ÀüÈ¯
+    // í˜„ì¬ ìˆ˜í–‰ì¤‘ì¸ íƒœìŠ¤í¬ì˜ ì •ë³´ë¥¼ ìˆ˜ì •í•œ ë’¤ ì½˜í…ìŠ¤íŠ¸ ì „í™˜
     pstRunningTask = gs_stScheduler.pstRunningTask;
     gs_stScheduler.pstRunningTask = pstNextTask;
 
-    // À¯ÈŞ ÅÂ½ºÅ©¿¡¼­ ÀüÈ¯µÇ¾ú´Ù¸é »ç¿ëÇÑ Tick Count¸¦ Áõ°¡½ÃÅ´
+    // ìœ íœ´ íƒœìŠ¤í¬ì—ì„œ ì „í™˜ë˜ì—ˆë‹¤ë©´ ì‚¬ìš©í•œ Tick Countë¥¼ ì¦ê°€ì‹œí‚´
     if( ( pstRunningTask->qwFlags & TASK_FLAGS_IDLE ) == TASK_FLAGS_IDLE )
     {
         gs_stScheduler.qwSpendProcessorTimeInIdleTask += TASK_PROCESSORTIME;
-    }    
+    }
     
-    // ÅÂ½ºÅ© Á¾·á ÇÃ·¡±×°¡ ¼³Á¤µÈ °æ¿ì, ÄÜÅØ½ºÆ®¸¦ ÀúÀåÇÏÁö ¾Ê°í ´ë±â ¸®½ºÆ®¿¡¸¸ »ğÀÔ
+    // íƒœìŠ¤í¬ ì¢…ë£Œ í”Œë˜ê·¸ê°€ ì„¤ì •ëœ ê²½ìš°, ì½˜í…ìŠ¤íŠ¸ë¥¼ ì €ì¥í•˜ì§€ ì•Šê³  ëŒ€ê¸° ë¦¬ìŠ¤íŠ¸ì—ë§Œ ì‚½ì…
     if( pstRunningTask->qwFlags & TASK_FLAGS_ENDTASK )
-    {    
+    {
         kAddListToTail( &( gs_stScheduler.stWaitList ), pstRunningTask );
     }
-    // ÅÂ½ºÅ©°¡ Á¾·áµÇÁö ¾ÊÀ¸¸é IST¿¡ ÀÖ´Â ÄÜÅØ½ºÆ®¸¦ º¹»çÇÏ°í, ÇöÀç ÅÂ½ºÅ©¸¦ ÁØºñ ¸®½ºÆ®·Î
-    // ¿Å±è
+    // íƒœìŠ¤í¬ê°€ ì¢…ë£Œë˜ì§€ ì•Šìœ¼ë©´ ISTì— ìˆëŠ” ì½˜í…ìŠ¤íŠ¸ë¥¼ ë³µì‚¬í•˜ê³ , í˜„ì¬ íƒœìŠ¤í¬ë¥¼ ì¤€ë¹„ ë¦¬ìŠ¤íŠ¸ë¡œ
+    // ì˜®ê¹€
     else
     {
         kMemCpy( &( pstRunningTask->stContext ), pcContextAddress, sizeof( CONTEXT ) );
         kAddTaskToReadyList( pstRunningTask );
     }
-    // ÀÓ°è ¿µ¿ª ³¡
+    // ì„ê³„ ì˜ì—­ ë
     kUnlockForSystemData( bPreviousFlag );
 
-    // ÀüÈ¯ÇØ¼­ ½ÇÇàÇÒ ÅÂ½ºÅ©¸¦ Running Task·Î ¼³Á¤ÇÏ°í ÄÜÅØ½ºÆ®¸¦ IST¿¡ º¹»çÇØ¼­
-    // ÀÚµ¿À¸·Î ÅÂ½ºÅ© ÀüÈ¯ÀÌ ÀÏ¾î³ªµµ·Ï ÇÔ
+    // ì „í™˜í•´ì„œ ì‹¤í–‰í•  íƒœìŠ¤í¬ë¥¼ Running Taskë¡œ ì„¤ì •í•˜ê³  ì½˜í…ìŠ¤íŠ¸ë¥¼ ISTì— ë³µì‚¬í•´ì„œ
+    // ìë™ìœ¼ë¡œ íƒœìŠ¤í¬ ì „í™˜ì´ ì¼ì–´ë‚˜ë„ë¡ í•¨
     kMemCpy( pcContextAddress, &( pstNextTask->stContext ), sizeof( CONTEXT ) );
     
-    // ÇÁ·Î¼¼¼­ »ç¿ë ½Ã°£À» ¾÷µ¥ÀÌÆ®
+    // í”„ë¡œì„¸ì„œ ì‚¬ìš© ì‹œê°„ì„ ì—…ë°ì´íŠ¸
     gs_stScheduler.iProcessorTime = TASK_PROCESSORTIME;
     return TRUE;
 }
 
 /**
- *  ÇÁ·Î¼¼¼­¸¦ »ç¿ëÇÒ ¼ö ÀÖ´Â ½Ã°£À» ÇÏ³ª ÁÙÀÓ
+ *  í”„ë¡œì„¸ì„œë¥¼ ì‚¬ìš©í•  ìˆ˜ ìˆëŠ” ì‹œê°„ì„ í•˜ë‚˜ ì¤„ì„
  */
 void kDecreaseProcessorTime( void )
 {
@@ -670,7 +718,7 @@ void kDecreaseProcessorTime( void )
 }
 
 /**
- *  ÇÁ·Î¼¼¼­¸¦ »ç¿ëÇÒ ¼ö ÀÖ´Â ½Ã°£ÀÌ ´Ù µÇ¾ú´ÂÁö ¿©ºÎ¸¦ ¹İÈ¯
+ *  í”„ë¡œì„¸ì„œë¥¼ ì‚¬ìš©í•  ìˆ˜ ìˆëŠ” ì‹œê°„ì´ ë‹¤ ë˜ì—ˆëŠ”ì§€ ì—¬ë¶€ë¥¼ ë°˜í™˜
  */
 BOOL kIsProcessorTimeExpired( void )
 {
@@ -682,7 +730,7 @@ BOOL kIsProcessorTimeExpired( void )
 }
 
 /**
- *  ÅÂ½ºÅ©¸¦ Á¾·á
+ *  íƒœìŠ¤í¬ë¥¼ ì¢…ë£Œ
  */
 BOOL kEndTask( QWORD qwTaskID )
 {
@@ -690,40 +738,40 @@ BOOL kEndTask( QWORD qwTaskID )
     BYTE bPriority;
     BOOL bPreviousFlag;
     
-    // ÀÓ°è ¿µ¿ª ½ÃÀÛ
+    // ì„ê³„ ì˜ì—­ ì‹œì‘
     bPreviousFlag = kLockForSystemData();
     
-    // ÇöÀç ½ÇÇàÁßÀÎ ÅÂ½ºÅ©ÀÌ¸é EndTask ºñÆ®¸¦ ¼³Á¤ÇÏ°í ÅÂ½ºÅ©¸¦ ÀüÈ¯
+    // í˜„ì¬ ì‹¤í–‰ì¤‘ì¸ íƒœìŠ¤í¬ì´ë©´ EndTask ë¹„íŠ¸ë¥¼ ì„¤ì •í•˜ê³  íƒœìŠ¤í¬ë¥¼ ì „í™˜
     pstTarget = gs_stScheduler.pstRunningTask;
     if( pstTarget->stLink.qwID == qwTaskID )
     {
         pstTarget->qwFlags |= TASK_FLAGS_ENDTASK;
         SETPRIORITY( pstTarget->qwFlags, TASK_FLAGS_WAIT );
         
-        // ÀÓ°è ¿µ¿ª ³¡
+        // ì„ê³„ ì˜ì—­ ë
         kUnlockForSystemData( bPreviousFlag );
         
         kSchedule();
         
-        // ÅÂ½ºÅ©°¡ ÀüÈ¯ µÇ¾úÀ¸¹Ç·Î ¾Æ·¡ ÄÚµå´Â Àı´ë ½ÇÇàµÇÁö ¾ÊÀ½
+        // íƒœìŠ¤í¬ê°€ ì „í™˜ ë˜ì—ˆìœ¼ë¯€ë¡œ ì•„ë˜ ì½”ë“œëŠ” ì ˆëŒ€ ì‹¤í–‰ë˜ì§€ ì•ŠìŒ
         while( 1 ) ;
     }
-    // ½ÇÇà ÁßÀÎ ÅÂ½ºÅ©°¡ ¾Æ´Ï¸é ÁØºñ Å¥¿¡¼­ Á÷Á¢ Ã£¾Æ¼­ ´ë±â ¸®½ºÆ®¿¡ ¿¬°á
+    // ì‹¤í–‰ ì¤‘ì¸ íƒœìŠ¤í¬ê°€ ì•„ë‹ˆë©´ ì¤€ë¹„ íì—ì„œ ì§ì ‘ ì°¾ì•„ì„œ ëŒ€ê¸° ë¦¬ìŠ¤íŠ¸ì— ì—°ê²°
     else
     {
-        // ÁØºñ ¸®½ºÆ®¿¡¼­ ÅÂ½ºÅ©¸¦ Ã£Áö ¸øÇÏ¸é Á÷Á¢ ÅÂ½ºÅ©¸¦ Ã£¾Æ¼­ ÅÂ½ºÅ© Á¾·á ºñÆ®¸¦
-        // ¼³Á¤
+        // ì¤€ë¹„ ë¦¬ìŠ¤íŠ¸ì—ì„œ íƒœìŠ¤í¬ë¥¼ ì°¾ì§€ ëª»í•˜ë©´ ì§ì ‘ íƒœìŠ¤í¬ë¥¼ ì°¾ì•„ì„œ íƒœìŠ¤í¬ ì¢…ë£Œ ë¹„íŠ¸ë¥¼
+        // ì„¤ì •
         pstTarget = kRemoveTaskFromReadyList( qwTaskID );
         if( pstTarget == NULL )
         {
-            // ÅÂ½ºÅ© ID·Î Á÷Á¢ Ã£¾Æ¼­ ¼³Á¤
+            // íƒœìŠ¤í¬ IDë¡œ ì§ì ‘ ì°¾ì•„ì„œ ì„¤ì •
             pstTarget = kGetTCBInTCBPool( GETTCBOFFSET( qwTaskID ) );
             if( pstTarget != NULL )
             {
                 pstTarget->qwFlags |= TASK_FLAGS_ENDTASK;
                 SETPRIORITY( pstTarget->qwFlags, TASK_FLAGS_WAIT );
             }
-            // ÀÓ°è ¿µ¿ª ³¡
+            // ì„ê³„ ì˜ì—­ ë
             kUnlockForSystemData( bPreviousFlag );
             return TRUE;
         }
@@ -732,13 +780,13 @@ BOOL kEndTask( QWORD qwTaskID )
         SETPRIORITY( pstTarget->qwFlags, TASK_FLAGS_WAIT );
         kAddListToTail( &( gs_stScheduler.stWaitList ), pstTarget );
     }
-    // ÀÓ°è ¿µ¿ª ³¡
+    // ì„ê³„ ì˜ì—­ ë
     kUnlockForSystemData( bPreviousFlag );
     return TRUE;
 }
 
 /**
- *  ÅÂ½ºÅ©°¡ ÀÚ½ÅÀ» Á¾·áÇÔ
+ *  íƒœìŠ¤í¬ê°€ ìì‹ ì„ ì¢…ë£Œí•¨
  */
 void kExitTask( void )
 {
@@ -746,7 +794,7 @@ void kExitTask( void )
 }
 
 /**
- *  ÁØºñ Å¥¿¡ ÀÖ´Â ¸ğµç ÅÂ½ºÅ©ÀÇ ¼ö¸¦ ¹İÈ¯
+ *  ì¤€ë¹„ íì— ìˆëŠ” ëª¨ë“  íƒœìŠ¤í¬ì˜ ìˆ˜ë¥¼ ë°˜í™˜
  */
 int kGetReadyTaskCount( void )
 {
@@ -754,43 +802,43 @@ int kGetReadyTaskCount( void )
     int i;
     BOOL bPreviousFlag;
 
-    // ÀÓ°è ¿µ¿ª ½ÃÀÛ
+    // ì„ê³„ ì˜ì—­ ì‹œì‘
     bPreviousFlag = kLockForSystemData();
 
-    // ¸ğµç ÁØºñ Å¥¸¦ È®ÀÎÇÏ¿© ÅÂ½ºÅ© °³¼ö¸¦ ±¸ÇÔ
+    // ëª¨ë“  ì¤€ë¹„ íë¥¼ í™•ì¸í•˜ì—¬ íƒœìŠ¤í¬ ê°œìˆ˜ë¥¼ êµ¬í•¨
     for( i = 0 ; i < TASK_MAXREADYLISTCOUNT ; i++ )
     {
         iTotalCount += kGetListCount( &( gs_stScheduler.vstReadyList[ i ] ) );
     }
     
-    // ÀÓ°è ¿µ¿ª ³¡
+    // ì„ê³„ ì˜ì—­ ë
     kUnlockForSystemData( bPreviousFlag );
     return iTotalCount ;
 }
 
 /**
- *  ÀüÃ¼ ÅÂ½ºÅ©ÀÇ ¼ö¸¦ ¹İÈ¯
- */ 
+ *  ì „ì²´ íƒœìŠ¤í¬ì˜ ìˆ˜ë¥¼ ë°˜í™˜
+ */
 int kGetTaskCount( void )
 {
     int iTotalCount;
     BOOL bPreviousFlag;
     
-    // ÁØºñ Å¥ÀÇ ÅÂ½ºÅ© ¼ö¸¦ ±¸ÇÑ ÈÄ, ´ë±â Å¥ÀÇ ÅÂ½ºÅ© ¼ö¿Í ÇöÀç ¼öÇà ÁßÀÎ ÅÂ½ºÅ© ¼ö¸¦ ´õÇÔ
+    // ì¤€ë¹„ íì˜ íƒœìŠ¤í¬ ìˆ˜ë¥¼ êµ¬í•œ í›„, ëŒ€ê¸° íì˜ íƒœìŠ¤í¬ ìˆ˜ì™€ í˜„ì¬ ìˆ˜í–‰ ì¤‘ì¸ íƒœìŠ¤í¬ ìˆ˜ë¥¼ ë”í•¨
     iTotalCount = kGetReadyTaskCount();
     
-    // ÀÓ°è ¿µ¿ª ½ÃÀÛ
+    // ì„ê³„ ì˜ì—­ ì‹œì‘
     bPreviousFlag = kLockForSystemData();
     
     iTotalCount += kGetListCount( &( gs_stScheduler.stWaitList ) ) + 1;
 
-    // ÀÓ°è ¿µ¿ª ³¡
+    // ì„ê³„ ì˜ì—­ ë
     kUnlockForSystemData( bPreviousFlag );
     return iTotalCount;
 }
 
 /**
- *  TCB Ç®¿¡¼­ ÇØ´ç ¿ÀÇÁ¼ÂÀÇ TCB¸¦ ¹İÈ¯
+ *  TCB í’€ì—ì„œ í•´ë‹¹ ì˜¤í”„ì…‹ì˜ TCBë¥¼ ë°˜í™˜
  */
 TCB* kGetTCBInTCBPool( int iOffset )
 {
@@ -803,15 +851,15 @@ TCB* kGetTCBInTCBPool( int iOffset )
 }
 
 /**
- *  ÅÂ½ºÅ©°¡ Á¸ÀçÇÏ´ÂÁö ¿©ºÎ¸¦ ¹İÈ¯
+ *  íƒœìŠ¤í¬ê°€ ì¡´ì¬í•˜ëŠ”ì§€ ì—¬ë¶€ë¥¼ ë°˜í™˜
  */
 BOOL kIsTaskExist( QWORD qwID )
 {
     TCB* pstTCB;
     
-    // ID·Î TCB¸¦ ¹İÈ¯
+    // IDë¡œ TCBë¥¼ ë°˜í™˜
     pstTCB = kGetTCBInTCBPool( GETTCBOFFSET( qwID ) );
-    // TCB°¡ ¾ø°Å³ª ID°¡ ÀÏÄ¡ÇÏÁö ¾ÊÀ¸¸é Á¸ÀçÇÏÁö ¾Ê´Â °ÍÀÓ
+    // TCBê°€ ì—†ê±°ë‚˜ IDê°€ ì¼ì¹˜í•˜ì§€ ì•Šìœ¼ë©´ ì¡´ì¬í•˜ì§€ ì•ŠëŠ” ê²ƒì„
     if( ( pstTCB == NULL ) || ( pstTCB->stLink.qwID != qwID ) )
     {
         return FALSE;
@@ -820,7 +868,7 @@ BOOL kIsTaskExist( QWORD qwID )
 }
 
 /**
- *  ÇÁ·Î¼¼¼­ÀÇ »ç¿ë·üÀ» ¹İÈ¯
+ *  í”„ë¡œì„¸ì„œì˜ ì‚¬ìš©ë¥ ì„ ë°˜í™˜
  */
 QWORD kGetProcessorLoad( void )
 {
@@ -828,23 +876,23 @@ QWORD kGetProcessorLoad( void )
 }
 
 /**
- *  ½º·¹µå°¡ ¼Ò¼ÓµÈ ÇÁ·Î¼¼½º¸¦ ¹İÈ¯
+ *  ìŠ¤ë ˆë“œê°€ ì†Œì†ëœ í”„ë¡œì„¸ìŠ¤ë¥¼ ë°˜í™˜
  */
 static TCB* kGetProcessByThread( TCB* pstThread )
 {
     TCB* pstProcess;
     
-    // ¸¸¾à ³»°¡ ÇÁ·Î¼¼½ºÀÌ¸é ÀÚ½ÅÀ» ¹İÈ¯
+    // ë§Œì•½ ë‚´ê°€ í”„ë¡œì„¸ìŠ¤ì´ë©´ ìì‹ ì„ ë°˜í™˜
     if( pstThread->qwFlags & TASK_FLAGS_PROCESS )
     {
         return pstThread;
     }
     
-    // ³»°¡ ÇÁ·Î¼¼½º°¡ ¾Æ´Ï¶ó¸é, ºÎ¸ğ ÇÁ·Î¼¼½º·Î ¼³Á¤µÈ ÅÂ½ºÅ© ID¸¦ ÅëÇØ 
-    // TCB Ç®¿¡¼­ ÅÂ½ºÅ© ÀÚ·á±¸Á¶ ÃßÃâ
+    // ë‚´ê°€ í”„ë¡œì„¸ìŠ¤ê°€ ì•„ë‹ˆë¼ë©´, ë¶€ëª¨ í”„ë¡œì„¸ìŠ¤ë¡œ ì„¤ì •ëœ íƒœìŠ¤í¬ IDë¥¼ í†µí•´
+    // TCB í’€ì—ì„œ íƒœìŠ¤í¬ ìë£Œêµ¬ì¡° ì¶”ì¶œ
     pstProcess = kGetTCBInTCBPool( GETTCBOFFSET( pstThread->qwParentProcessID ) );
 
-    // ¸¸¾à ÇÁ·Î¼¼½º°¡ ¾ø°Å³ª, ÅÂ½ºÅ© ID°¡ ÀÏÄ¡ÇÏÁö ¾Ê´Â´Ù¸é NULLÀ» ¹İÈ¯
+    // ë§Œì•½ í”„ë¡œì„¸ìŠ¤ê°€ ì—†ê±°ë‚˜, íƒœìŠ¤í¬ IDê°€ ì¼ì¹˜í•˜ì§€ ì•ŠëŠ”ë‹¤ë©´ NULLì„ ë°˜í™˜
     if( ( pstProcess == NULL ) || ( pstProcess->stLink.qwID != pstThread->qwParentProcessID ) )
     {
         return NULL;
@@ -854,11 +902,11 @@ static TCB* kGetProcessByThread( TCB* pstThread )
 }
 
 //==============================================================================
-//  À¯ÈŞ ÅÂ½ºÅ© °ü·Ã
+//  ìœ íœ´ íƒœìŠ¤í¬ ê´€ë ¨
 //==============================================================================
 /**
- *  À¯ÈŞ ÅÂ½ºÅ©
- *      ´ë±â Å¥¿¡ »èÁ¦ ´ë±âÁßÀÎ ÅÂ½ºÅ©¸¦ Á¤¸®
+ *  ìœ íœ´ íƒœìŠ¤í¬
+ *      ëŒ€ê¸° íì— ì‚­ì œ ëŒ€ê¸°ì¤‘ì¸ íƒœìŠ¤í¬ë¥¼ ì •ë¦¬
  */
 void kIdleTask( void )
 {
@@ -870,100 +918,100 @@ void kIdleTask( void )
     QWORD qwTaskID;
     void* pstThreadLink;
     
-    // ÇÁ·Î¼¼¼­ »ç¿ë·® °è»êÀ» À§ÇØ ±âÁØ Á¤º¸¸¦ ÀúÀå
+    // í”„ë¡œì„¸ì„œ ì‚¬ìš©ëŸ‰ ê³„ì‚°ì„ ìœ„í•´ ê¸°ì¤€ ì •ë³´ë¥¼ ì €ì¥
     qwLastSpendTickInIdleTask = gs_stScheduler.qwSpendProcessorTimeInIdleTask;
     qwLastMeasureTickCount = kGetTickCount();
     
     while( 1 )
     {
-        // ÇöÀç »óÅÂ¸¦ ÀúÀå
+        // í˜„ì¬ ìƒíƒœë¥¼ ì €ì¥
         qwCurrentMeasureTickCount = kGetTickCount();
         qwCurrentSpendTickInIdleTask = gs_stScheduler.qwSpendProcessorTimeInIdleTask;
         
-        // ÇÁ·Î¼¼¼­ »ç¿ë·®À» °è»ê
-        // 100 - ( À¯ÈŞ ÅÂ½ºÅ©°¡ »ç¿ëÇÑ ÇÁ·Î¼¼¼­ ½Ã°£ ) * 100 / ( ½Ã½ºÅÛ ÀüÃ¼¿¡¼­ 
-        // »ç¿ëÇÑ ÇÁ·Î¼¼¼­ ½Ã°£ )
+        // í”„ë¡œì„¸ì„œ ì‚¬ìš©ëŸ‰ì„ ê³„ì‚°
+        // 100 - ( ìœ íœ´ íƒœìŠ¤í¬ê°€ ì‚¬ìš©í•œ í”„ë¡œì„¸ì„œ ì‹œê°„ ) * 100 / ( ì‹œìŠ¤í…œ ì „ì²´ì—ì„œ
+        // ì‚¬ìš©í•œ í”„ë¡œì„¸ì„œ ì‹œê°„ )
         if( qwCurrentMeasureTickCount - qwLastMeasureTickCount == 0 )
         {
             gs_stScheduler.qwProcessorLoad = 0;
         }
         else
         {
-            gs_stScheduler.qwProcessorLoad = 100 - 
-                ( qwCurrentSpendTickInIdleTask - qwLastSpendTickInIdleTask ) * 
+            gs_stScheduler.qwProcessorLoad = 100 -
+                ( qwCurrentSpendTickInIdleTask - qwLastSpendTickInIdleTask ) *
                 100 /( qwCurrentMeasureTickCount - qwLastMeasureTickCount );
         }
         
-        // ÇöÀç »óÅÂ¸¦ ÀÌÀü »óÅÂ¿¡ º¸°ü
+        // í˜„ì¬ ìƒíƒœë¥¼ ì´ì „ ìƒíƒœì— ë³´ê´€
         qwLastMeasureTickCount = qwCurrentMeasureTickCount;
         qwLastSpendTickInIdleTask = qwCurrentSpendTickInIdleTask;
 
-        // ÇÁ·Î¼¼¼­ÀÇ ºÎÇÏ¿¡ µû¶ó ½¬°Ô ÇÔ
+        // í”„ë¡œì„¸ì„œì˜ ë¶€í•˜ì— ë”°ë¼ ì‰¬ê²Œ í•¨
         kHaltProcessorByLoad();
         
-        // ´ë±â Å¥¿¡ ´ë±âÁßÀÎ ÅÂ½ºÅ©°¡ ÀÖÀ¸¸é ÅÂ½ºÅ©¸¦ Á¾·áÇÔ
+        // ëŒ€ê¸° íì— ëŒ€ê¸°ì¤‘ì¸ íƒœìŠ¤í¬ê°€ ìˆìœ¼ë©´ íƒœìŠ¤í¬ë¥¼ ì¢…ë£Œí•¨
         if( kGetListCount( &( gs_stScheduler.stWaitList ) ) >= 0 )
         {
             while( 1 )
             {
-                // ÀÓ°è ¿µ¿ª ½ÃÀÛ
-                bPreviousFlag = kLockForSystemData();                
+                // ì„ê³„ ì˜ì—­ ì‹œì‘
+                bPreviousFlag = kLockForSystemData();
                 pstTask = kRemoveListFromHeader( &( gs_stScheduler.stWaitList ) );
                 if( pstTask == NULL )
                 {
-                    // ÀÓ°è ¿µ¿ª ³¡
+                    // ì„ê³„ ì˜ì—­ ë
                     kUnlockForSystemData( bPreviousFlag );
                     break;
                 }
                 
                 if( pstTask->qwFlags & TASK_FLAGS_PROCESS )
                 {
-                    // ÇÁ·Î¼¼½º¸¦ Á¾·áÇÒ ¶§ ÀÚ½Ä ½º·¹µå°¡ Á¸ÀçÇÏ¸é ½º·¹µå¸¦ ¸ğµÎ 
-                    // Á¾·áÇÏ°í, ´Ù½Ã ÀÚ½Ä ½º·¹µå ¸®½ºÆ®¿¡ »ğÀÔ
+                    // í”„ë¡œì„¸ìŠ¤ë¥¼ ì¢…ë£Œí•  ë•Œ ìì‹ ìŠ¤ë ˆë“œê°€ ì¡´ì¬í•˜ë©´ ìŠ¤ë ˆë“œë¥¼ ëª¨ë‘
+                    // ì¢…ë£Œí•˜ê³ , ë‹¤ì‹œ ìì‹ ìŠ¤ë ˆë“œ ë¦¬ìŠ¤íŠ¸ì— ì‚½ì…
                     iCount = kGetListCount( &( pstTask->stChildThreadList ) );
                     for( i = 0 ; i < iCount ; i++ )
                     {
-                        // ½º·¹µå ¸µÅ©ÀÇ ¾îµå·¹½º¿¡¼­ ²¨³» ½º·¹µå¸¦ Á¾·á½ÃÅ´
-                        pstThreadLink = ( TCB* ) kRemoveListFromHeader( 
+                        // ìŠ¤ë ˆë“œ ë§í¬ì˜ ì–´ë“œë ˆìŠ¤ì—ì„œ êº¼ë‚´ ìŠ¤ë ˆë“œë¥¼ ì¢…ë£Œì‹œí‚´
+                        pstThreadLink = ( TCB* ) kRemoveListFromHeader(
                                 &( pstTask->stChildThreadList ) );
                         if( pstThreadLink == NULL )
                         {
                             break;
                         }
                         
-                        // ÀÚ½Ä ½º·¹µå ¸®½ºÆ®¿¡ ¿¬°áµÈ Á¤º¸´Â ÅÂ½ºÅ© ÀÚ·á±¸Á¶¿¡ ÀÖ´Â 
-                        // stThreadLinkÀÇ ½ÃÀÛ ¾îµå·¹½ºÀÌ¹Ç·Î, ÅÂ½ºÅ© ÀÚ·á±¸Á¶ÀÇ ½ÃÀÛ
-                        // ¾îµå·¹½º¸¦ ±¸ÇÏ·Á¸é º°µµÀÇ °è»êÀÌ ÇÊ¿äÇÔ
+                        // ìì‹ ìŠ¤ë ˆë“œ ë¦¬ìŠ¤íŠ¸ì— ì—°ê²°ëœ ì •ë³´ëŠ” íƒœìŠ¤í¬ ìë£Œêµ¬ì¡°ì— ìˆëŠ”
+                        // stThreadLinkì˜ ì‹œì‘ ì–´ë“œë ˆìŠ¤ì´ë¯€ë¡œ, íƒœìŠ¤í¬ ìë£Œêµ¬ì¡°ì˜ ì‹œì‘
+                        // ì–´ë“œë ˆìŠ¤ë¥¼ êµ¬í•˜ë ¤ë©´ ë³„ë„ì˜ ê³„ì‚°ì´ í•„ìš”í•¨
                         pstChildThread = GETTCBFROMTHREADLINK( pstThreadLink );
 
-                        // ´Ù½Ã ÀÚ½Ä ½º·¹µå ¸®½ºÆ®¿¡ »ğÀÔÇÏ¿© ÇØ´ç ½º·¹µå°¡ Á¾·áµÉ ¶§
-                        // ÀÚ½Ä ½º·¹µå°¡ ÇÁ·Î¼¼½º¸¦ Ã£¾Æ ½º½º·Î ¸®½ºÆ®¿¡¼­ Á¦°ÅÇÏµµ·Ï ÇÔ
+                        // ë‹¤ì‹œ ìì‹ ìŠ¤ë ˆë“œ ë¦¬ìŠ¤íŠ¸ì— ì‚½ì…í•˜ì—¬ í•´ë‹¹ ìŠ¤ë ˆë“œê°€ ì¢…ë£Œë  ë•Œ
+                        // ìì‹ ìŠ¤ë ˆë“œê°€ í”„ë¡œì„¸ìŠ¤ë¥¼ ì°¾ì•„ ìŠ¤ìŠ¤ë¡œ ë¦¬ìŠ¤íŠ¸ì—ì„œ ì œê±°í•˜ë„ë¡ í•¨
                         kAddListToTail( &( pstTask->stChildThreadList ),
                                 &( pstChildThread->stThreadLink ) );
 
-                        // ÀÚ½Ä ½º·¹µå¸¦ Ã£¾Æ¼­ Á¾·á
+                        // ìì‹ ìŠ¤ë ˆë“œë¥¼ ì°¾ì•„ì„œ ì¢…ë£Œ
                         kEndTask( pstChildThread->stLink.qwID );
                     }
                     
-                    // ¾ÆÁ÷ ÀÚ½Ä ½º·¹µå°¡ ³²¾ÆÀÖ´Ù¸é ÀÚ½Ä ½º·¹µå°¡ ´Ù Á¾·áµÉ ¶§±îÁö
-                    // ±â´Ù·Á¾ß ÇÏ¹Ç·Î ´Ù½Ã ´ë±â ¸®½ºÆ®¿¡ »ğÀÔ
+                    // ì•„ì§ ìì‹ ìŠ¤ë ˆë“œê°€ ë‚¨ì•„ìˆë‹¤ë©´ ìì‹ ìŠ¤ë ˆë“œê°€ ë‹¤ ì¢…ë£Œë  ë•Œê¹Œì§€
+                    // ê¸°ë‹¤ë ¤ì•¼ í•˜ë¯€ë¡œ ë‹¤ì‹œ ëŒ€ê¸° ë¦¬ìŠ¤íŠ¸ì— ì‚½ì…
                     if( kGetListCount( &( pstTask->stChildThreadList ) ) > 0 )
                     {
                         kAddListToTail( &( gs_stScheduler.stWaitList ), pstTask );
 
-                        // ÀÓ°è ¿µ¿ª ³¡
+                        // ì„ê³„ ì˜ì—­ ë
                         kUnlockForSystemData( bPreviousFlag );
                         continue;
                     }
-                    // ÇÁ·Î¼¼½º¸¦ Á¾·áÇØ¾ß ÇÏ¹Ç·Î ÇÒ´ç ¹ŞÀº ¸Ş¸ğ¸® ¿µ¿ªÀ» »èÁ¦
+                    // í”„ë¡œì„¸ìŠ¤ë¥¼ ì¢…ë£Œí•´ì•¼ í•˜ë¯€ë¡œ í• ë‹¹ ë°›ì€ ë©”ëª¨ë¦¬ ì˜ì—­ì„ ì‚­ì œ
                     else
                     {
-                        // TODO: ÃßÈÄ¿¡ ÄÚµå »ğÀÔ
+                        // TODO: ì¶”í›„ì— ì½”ë“œ ì‚½ì…
                     }
-                }                
+                }
                 else if( pstTask->qwFlags & TASK_FLAGS_THREAD )
                 {
-                    // ½º·¹µå¶ó¸é ÇÁ·Î¼¼½ºÀÇ ÀÚ½Ä ½º·¹µå ¸®½ºÆ®¿¡¼­ Á¦°Å
+                    // ìŠ¤ë ˆë“œë¼ë©´ í”„ë¡œì„¸ìŠ¤ì˜ ìì‹ ìŠ¤ë ˆë“œ ë¦¬ìŠ¤íŠ¸ì—ì„œ ì œê±°
                     pstProcess = kGetProcessByThread( pstTask );
                     if( pstProcess != NULL )
                     {
@@ -973,10 +1021,10 @@ void kIdleTask( void )
                 
                 qwTaskID = pstTask->stLink.qwID;
                 kFreeTCB( qwTaskID );
-                // ÀÓ°è ¿µ¿ª ³¡
+                // ì„ê³„ ì˜ì—­ ë
                 kUnlockForSystemData( bPreviousFlag );
                 
-                kPrintf( "IDLE: Task ID[0x%q] is completely ended.\n", 
+                kPrintf( "IDLE: Task ID[0x%q] is completely ended.\n",
                         qwTaskID );
             }
         }
@@ -986,7 +1034,7 @@ void kIdleTask( void )
 }
 
 /**
- *  ÃøÁ¤µÈ ÇÁ·Î¼¼¼­ ºÎÇÏ¿¡ µû¶ó ÇÁ·Î¼¼¼­¸¦ ½¬°Ô ÇÔ
+ *  ì¸¡ì •ëœ í”„ë¡œì„¸ì„œ ë¶€í•˜ì— ë”°ë¼ í”„ë¡œì„¸ì„œë¥¼ ì‰¬ê²Œ í•¨
  */
 void kHaltProcessorByLoad( void )
 {
@@ -1006,3 +1054,4 @@ void kHaltProcessorByLoad( void )
         kHlt();
     }
 }
+
