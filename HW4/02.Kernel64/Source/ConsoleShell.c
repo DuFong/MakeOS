@@ -991,7 +991,7 @@ static void kTestThread( const char* pcParameterBuffer )
     BYTE bPriority;
 
     if(pcParameterBuffer == NULL){
-        kPrintf("Invalid priority. ex)testthread 3(Priority)")
+        kPrintf("Invalid priority. ex)testthread 3(Priority)");
         return;
     }
     // 우선순위를 입력받음
