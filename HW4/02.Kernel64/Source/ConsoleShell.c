@@ -21,13 +21,13 @@ SHELLCOMMANDENTRY gs_vstCommandTable[] = {
     {"rdtsc", "Read Time Stamp Counter", kReadTimeStampCounter},
     {"cpuspeed", "Measure Processor Speed", kMeasureProcessorSpeed},
     {"date", "Show Date And Time", kShowDateAndTime},
-    {"createtask", "Create Task, ex)createtask 1(type) 10(count)", kCreateTestTask},
+    {"createtask", "Create Task, ex)createtask 1(type) 10(count) 1(priority)", kCreateTestTask},
     { "changepriority", "Change Task Priority, ex)changepriority 1(ID) 2(Priority)", kChangeTaskPriority },
     { "tasklist", "Show Task List", kShowTaskList },
     { "killtask", "End Task, ex)killtask 1(ID) or 0xffffffff(All Task)", kKillTask },
     { "cpuload", "Show Processor Load", kCPULoad },
     { "testmutex", "Test Mutex Function", kTestMutex },
-    { "testthread", "Test Thread And Process Function", kTestThread },
+    { "testthread", "Test Thread And Process Function, ex) testthread 3(Priority)", kTestThread },
     { "showmatrix", "Show Matrix Screen", kShowMatrix },
 };
 
@@ -699,18 +699,27 @@ static void kCreateTestTask(const char* pcParameterBuffer){
     PARAMETERLIST stList;
     char vcType[30];
     char vcCount[30];
+    char vcPriority[30];
+    BYTE bPriority;
     int i;
 
     // 파라미터 추출
     kInitializeParameter(&stList, pcParameterBuffer);
     kGetNextParameter(&stList, vcType);
     kGetNextParameter(&stList, vcCount);
+    kGetNextParameter(&stList, vcPriority);
+    bPriority = vcPriority[0] - '0';
+    // 우선순위를 입력하지 않으면 종료
+    if(bPriority < 0 && bPriority > 4){
+        kPrintf("Invalid priority. ex)createtask 1(type) 10(count) 1(priority)\n");
+        return;
+    }
 
     switch(kAToI(vcType, 10)){
         // Type1 task
         case 1:
             for( i = 0 ; i < kAToI( vcCount, 10 ) ; i++ ){    
-                if( kCreateTask( TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, (QWORD) kTestTask1 ) == NULL ){
+                if( kCreateTask( bPriority | TASK_FLAGS_PROCESS, 0, 0, (QWORD) kTestTask1 ) == NULL ){
                     break;
                 }
             }
@@ -721,7 +730,7 @@ static void kCreateTestTask(const char* pcParameterBuffer){
         case 2:
         default:
             for(i = 0; i < kAToI(vcCount, 10); i++){
-                if( kCreateTask(TASK_FLAGS_LOW | TASK_FLAGS_THREAD, 0, 0, ( QWORD ) kTestTask2 ) == NULL){
+                if( kCreateTask(bPriority | TASK_FLAGS_PROCESS, 0, 0, ( QWORD ) kTestTask2 ) == NULL){
                     break;
                 }
             }
@@ -979,8 +988,16 @@ static void kCreateThreadTask( void )
 static void kTestThread( const char* pcParameterBuffer )
 {
     TCB* pstProcess;
+    BYTE bPriority;
+
+    if(pcParameterBuffer == NULL){
+        kPrintf("Invalid priority. ex)testthread 3(Priority)")
+        return;
+    }
+    // 우선순위를 입력받음
+    bPriority = pcParameterBuffer[0] - '0';
     
-    pstProcess = kCreateTask( TASK_FLAGS_LOW | TASK_FLAGS_PROCESS, ( void * )0xEEEEEEEE, 0x1000, ( QWORD ) kCreateThreadTask );
+    pstProcess = kCreateTask( bPriority | TASK_FLAGS_PROCESS, ( void * )0xEEEEEEEE, 0x1000, ( QWORD ) kCreateThreadTask );
     if( pstProcess != NULL )
     {
         kPrintf( "Process [0x%Q] Create Success\n", pstProcess->stLink.qwID ); 
