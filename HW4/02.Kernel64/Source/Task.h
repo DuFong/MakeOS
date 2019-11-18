@@ -62,7 +62,14 @@
 #define TASK_FLAGS_MEDIUM             2
 #define TASK_FLAGS_LOW                3
 #define TASK_FLAGS_LOWEST             4
-#define TASK_FLAGS_WAIT               0xFF          
+#define TASK_FLAGS_WAIT               0xFF  
+
+// 우선 순위 별 ticket 수
+#define TICKET_HIGHEST            50
+#define TICKET_HIGH               40
+#define TICKET_MEDIUM             30
+#define TICKET_LOW                20
+#define TICKET_LOWEST             10
 
 // 태스크의 플래그
 #define TASK_FLAGS_ENDTASK            0x8000000000000000
@@ -107,6 +114,9 @@ typedef struct kTaskControlBlockStruct
     // 프로세스 메모리 영역의 시작과 크기
     void* pvMemoryAddress;
     QWORD qwMemorySize;
+
+    // 우선순위별로 부여받을 ticket 수
+    QWORD ticket;
 
     //==========================================================================
     // 이하 스레드 정보
@@ -188,7 +198,10 @@ void kInitializeScheduler( void );
 void kSetRunningTask( TCB* pstTask );
 TCB* kGetRunningTask( void );
 static TCB* kGetNextTaskToRun( void );
+static TCB* kGetNextTaskToRunbyLottery(int totaltickets);
+static TCB* kGetNextTaskToRunbyStride(int totaltickets);
 static BOOL kAddTaskToReadyList( TCB* pstTask );
+QWORD getTicket(BYTE bPriority);
 void kSchedule( void );
 BOOL kScheduleInInterrupt( void );
 void kDecreaseProcessorTime( void );
@@ -203,6 +216,7 @@ TCB* kGetTCBInTCBPool( int iOffset );
 BOOL kIsTaskExist( QWORD qwID );
 QWORD kGetProcessorLoad( void );
 static TCB* kGetProcessByThread( TCB* pstThread );
+QWORD getrandom(int final);
 
 //==============================================================================
 //  유휴 태스크 관련

@@ -276,45 +276,125 @@ TCB* kGetRunningTask( void )
     return pstRunningTask;
 }
 
+// /**
+//  *  태스크 리스트에서 다음으로 실행할 태스크를 얻음 (Multilevel Queue Scheduler)
+//  */
+// static TCB* kGetNextTaskToRun( void )
+// {
+//     TCB* pstTarget = NULL;
+//     int iTaskCount, i, j;
+    
+//     // 큐에 태스크가 있으나 모든 큐의 태스크가 1회씩 실행된 경우, 모든 큐가 프로세서를
+//     // 양보하여 태스크를 선택하지 못할 수 있으니 NULL일 경우 한번 더 수행
+//     for( j = 0 ; j < 2 ; j++ )
+//     {
+//         // 높은 우선 순위에서 낮은 우선 순위까지 리스트를 확인하여 스케줄링할 태스크를 선택
+//         for( i = 0 ; i < TASK_MAXREADYLISTCOUNT ; i++ )
+//         {
+//             iTaskCount = kGetListCount( &( gs_stScheduler.vstReadyList[ i ] ) );
+            
+//             // 만약 실행한 횟수보다 리스트의 태스크 수가 더 많으면 현재 우선 순위의
+//             // 태스크를 실행함
+//             if( gs_stScheduler.viExecuteCount[ i ] < iTaskCount )
+//             {
+//                 pstTarget = ( TCB* ) kRemoveListFromHeader( 
+//                                         &( gs_stScheduler.vstReadyList[ i ] ) );
+//                 gs_stScheduler.viExecuteCount[ i ]++;
+//                 break;            
+//             }
+//             // 만약 실행한 횟수가 더 많으면 실행 횟수를 초기화하고 다음 우선 순위로 양보함
+//             else
+//             {
+//                 gs_stScheduler.viExecuteCount[ i ] = 0;
+//             }
+//         }
+        
+//         // 만약 수행할 태스크를 찾았으면 종료
+//         if( pstTarget != NULL )
+//         {
+//             break;
+//         }
+//     }    
+//     return pstTarget;
+// }
+
 /**
  *  태스크 리스트에서 다음으로 실행할 태스크를 얻음
  */
 static TCB* kGetNextTaskToRun( void )
 {
     TCB* pstTarget = NULL;
-    int iTaskCount, i, j;
+    int iTaskCount, i;
+    QWORD totaltickets = 0;
+
+    // 총 티켓 수 구하기
+    for(i = 0; i<TASK_MAXREADYLISTCOUNT; i++){
+        iTaskCount = kGetListCount(&(gs_stScheduler.vstReadyList[i]));
+        totaltickets += (iTaskCount * getTicket(i));
+    }
     
-    // 큐에 태스크가 있으나 모든 큐의 태스크가 1회씩 실행된 경우, 모든 큐가 프로세서를
-    // 양보하여 태스크를 선택하지 못할 수 있으니 NULL일 경우 한번 더 수행
-    for( j = 0 ; j < 2 ; j++ )
+    // Lottery Scheduler를 이용
+    pstTarget = kGetNextTaskToRunbyLottery(totaltickets);
+    // Stride Scheduler를 이용
+    //pstTarget = kGetNextTaskToRunbyStride(totaltickets);
+
+    return pstTarget;
+}
+
+// Lottery Scheduler를 이용한 kGetNextTaskToRun
+static TCB* kGetNextTaskToRunbyLottery(int totaltickets)
+{
+    TCB* pstTarget = NULL;
+    TCB* current = NULL;
+    int iTaskCount, i;
+    QWORD counter = 0, winner;
+    
+    // 랜덤 값 뽑기
+    winner = getrandom(totaltickets);
+
+    // task를 돌며 ticket수를 확인하며 counter에 더해주면서 counter>=winner가 되는 task 수행
+    for( i = 0 ; i < TASK_MAXREADYLISTCOUNT ; i++ )
     {
-        // 높은 우선 순위에서 낮은 우선 순위까지 리스트를 확인하여 스케줄링할 태스크를 선택
-        for( i = 0 ; i < TASK_MAXREADYLISTCOUNT ; i++ )
-        {
-            iTaskCount = kGetListCount( &( gs_stScheduler.vstReadyList[ i ] ) );
-            
-            // 만약 실행한 횟수보다 리스트의 태스크 수가 더 많으면 현재 우선 순위의
-            // 태스크를 실행함
-            if( gs_stScheduler.viExecuteCount[ i ] < iTaskCount )
-            {
-                pstTarget = ( TCB* ) kRemoveListFromHeader( 
-                                        &( gs_stScheduler.vstReadyList[ i ] ) );
-                gs_stScheduler.viExecuteCount[ i ]++;
-                break;            
+        iTaskCount = kGetListCount( &( gs_stScheduler.vstReadyList[ i ] ) );
+        if(iTaskCount == 0) continue;
+
+        current = (TCB*)kGetHeaderFromList(&( gs_stScheduler.vstReadyList[ i ] ));
+    
+        while(current){
+            counter += (current->ticket);
+            if(counter >= winner){
+                pstTarget = kRemoveList(&(gs_stScheduler.vstReadyList[i]), current->stLink.qwID);
+                break; 
             }
-            // 만약 실행한 횟수가 더 많으면 실행 횟수를 초기화하고 다음 우선 순위로 양보함
-            else
-            {
-                gs_stScheduler.viExecuteCount[ i ] = 0;
-            }
+            current = kGetNextFromList(&( gs_stScheduler.vstReadyList[ i ] ), current);
         }
-        
         // 만약 수행할 태스크를 찾았으면 종료
-        if( pstTarget != NULL )
-        {
+        if( pstTarget != NULL ){
             break;
         }
-    }    
+    }
+    return pstTarget;
+}
+
+// 난수를 발생시키기 위한 변수
+static volatile QWORD gs_qwRandomValue = 0;
+
+/**
+ *  임의의 난수를 반환
+ */
+QWORD getrandom(int final)
+{
+    gs_qwRandomValue = ( gs_qwRandomValue * 412153 + 5571031 ) >> 16;
+    return gs_qwRandomValue % (final+1);
+}
+
+// Stride Scheduler를 이용한 kGetNextTaskToRun
+static TCB* kGetNextTaskToRunbyStride(int totaltickets)
+{
+    TCB* pstTarget = NULL;
+    int iTaskCount, i;
+
+    
     return pstTarget;
 }
 
@@ -335,9 +415,38 @@ static BOOL kAddTaskToReadyList( TCB* pstTask )
     {
         return FALSE;
     }
-    
+
+    // ticket 우선순위에 따라 부여
+    pstTask->ticket = getTicket(bPriority);
+
     kAddListToTail( &( gs_stScheduler.vstReadyList[ bPriority ] ), pstTask );
     return TRUE;
+}
+
+/**
+ *  우선순위에 따라 ticket 주어짐
+ */
+QWORD getTicket(BYTE bPriority){
+    QWORD ticket;
+
+    switch (bPriority){
+        case TASK_FLAGS_HIGHEST:
+            ticket = TICKET_HIGHEST;
+            break;
+        case TASK_FLAGS_HIGH:
+            ticket = TICKET_HIGH;
+            break;
+        case TASK_FLAGS_MEDIUM:
+            ticket = TICKET_MEDIUM;
+            break;
+        case TASK_FLAGS_LOW:
+            ticket = TICKET_LOW;
+            break;
+        case TASK_FLAGS_LOWEST:
+            ticket = TICKET_LOWEST;
+            break;
+    }
+    return ticket;
 }
 
 /**
@@ -396,6 +505,7 @@ BOOL kChangePriority( QWORD qwTaskID, BYTE bPriority )
     if( pstTarget->stLink.qwID == qwTaskID )
     {
         SETPRIORITY( pstTarget->qwFlags, bPriority );
+        pstTarget->ticket = getTicket(bPriority);
     }
     // 실행중인 태스크가 아니면 준비 리스트에서 찾아서 해당 우선 순위의 리스트로 이동
     else
@@ -410,12 +520,14 @@ BOOL kChangePriority( QWORD qwTaskID, BYTE bPriority )
             {
                 // 우선 순위를 설정
                 SETPRIORITY( pstTarget->qwFlags, bPriority );
+                pstTarget->ticket = getTicket(bPriority);
             }
         }
         else
         {
             // 우선 순위를 설정하고 준비 리스트에 다시 삽입
             SETPRIORITY( pstTarget->qwFlags, bPriority );
+            pstTarget->ticket = getTicket(bPriority);
             kAddTaskToReadyList( pstTarget );
         }
     }
