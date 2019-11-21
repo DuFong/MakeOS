@@ -125,7 +125,7 @@ TCB* kCreateTask( QWORD qwFlags, void* pvMemoryAddress, QWORD qwMemorySize,
         pstTask->pvMemoryAddress = pstProcess->pvMemoryAddress;
         pstTask->qwMemorySize = pstProcess->qwMemorySize;
         // 스레드는 스레드가 포함되는 프로세스의 우선순위와 같음
-        qwFlags = GETPRIORITY(pstProcess->qwFlags);
+        //qwFlags = GETPRIORITY(pstProcess->qwFlags);
         
         // 부모 프로세스의 자식 스레드 리스트에 추가
         kAddListToTail( &( pstProcess->stChildThreadList ), &( pstTask->stThreadLink ) );
@@ -337,9 +337,9 @@ static TCB* kGetNextTaskToRun( void )
     }
     
     // Lottery Scheduler를 이용
-    //pstTarget = kGetNextTaskToRunbyLottery(totaltickets);
+    pstTarget = kGetNextTaskToRunbyLottery(totaltickets);
     // Stride Scheduler를 이용
-    pstTarget = kGetNextTaskToRunbyStride(totaltickets);
+    //pstTarget = kGetNextTaskToRunbyStride(totaltickets);
 
     return pstTarget;
 }
@@ -501,7 +501,7 @@ void kSetTicketAndStride(TCB* pstTask, BYTE bPriority){
             break;
     }
 
-    pstTask->qwStride = 600 / pstTask->ticket;
+    pstTask->qwStride = TICKET_OPERAND / pstTask->ticket;
 }
 
 /**
@@ -632,6 +632,7 @@ void kSchedule( void )
     {
         gs_stScheduler.qwSpendProcessorTimeInIdleTask += 
             TASK_PROCESSORTIME - gs_stScheduler.iProcessorTime;
+        pstRunningTask->qwProcessorTime += gs_stScheduler.qwSpendProcessorTimeInIdleTask;
     }
     
     // 태스크 종료 플래그가 설정된 경우 콘텍스트를 저장할 필요가 없으므로, 대기 리스트에
@@ -690,7 +691,9 @@ BOOL kScheduleInInterrupt( void )
     if( ( pstRunningTask->qwFlags & TASK_FLAGS_IDLE ) == TASK_FLAGS_IDLE )
     {
         gs_stScheduler.qwSpendProcessorTimeInIdleTask += TASK_PROCESSORTIME;
-    }    
+    }
+    // 해당 태스크가 사용한 프로세서 시간 증가
+    pstRunningTask->qwProcessorTime += TASK_PROCESSORTIME;   
     
     // 태스크 종료 플래그가 설정된 경우, 콘텍스트를 저장하지 않고 대기 리스트에만 삽입
     if( pstRunningTask->qwFlags & TASK_FLAGS_ENDTASK )
@@ -931,6 +934,7 @@ void kIdleTask( void )
     // 프로세서 사용량 계산을 위해 기준 정보를 저장
     qwLastSpendTickInIdleTask = gs_stScheduler.qwSpendProcessorTimeInIdleTask;
     qwLastMeasureTickCount = kGetTickCount();
+    //kPrintf("Last: %d\n", qwLastMeasureTickCount);
     
     while( 1 )
     {

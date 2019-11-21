@@ -29,6 +29,7 @@ SHELLCOMMANDENTRY gs_vstCommandTable[] = {
     { "testmutex", "Test Mutex Function", kTestMutex },
     { "testthread", "Test Thread And Process Function, ex) testthread 3(Priority)", kTestThread },
     { "showmatrix", "Show Matrix Screen", kShowMatrix },
+    {"prioritytask", "Create tasks with different priority", kPriorityTask}
 };
 
 char historyCommand[10][100];
@@ -676,13 +677,32 @@ static void kTestTask2(){
     CHARACTER* pstScreen = (CHARACTER*) CONSOLE_VIDEOMEMORYADDRESS;
     TCB* pstRunningTask;
     char vcData[4] = {'-', '\\', '|', '/'};
+    QWORD qwLastSpendTickInIdleTask, qwLastMeasureTickCount, qwCurrentMeasureTickCount, qwCurrentSpendTickInIdleTask;
 
     // 자신의 ID를 얻어서 화면 오프셋으로 사용
     pstRunningTask = kGetRunningTask();
     iOffset = (pstRunningTask->stLink.qwID & 0xFFFFFFFF) * 2;
     iOffset = CONSOLE_WIDTH * CONSOLE_HEIGHT - (iOffset % (CONSOLE_WIDTH * CONSOLE_HEIGHT));
 
+    // 프로세서 사용량 계산을 위해 기준 정보를 저장
+    qwLastSpendTickInIdleTask = pstRunningTask->qwProcessorTime;
+    qwLastMeasureTickCount = kGetTickCount();
+
     while(1){
+        // 현재 상태를 저장
+        qwCurrentMeasureTickCount = kGetTickCount();
+        qwCurrentSpendTickInIdleTask = pstRunningTask->qwProcessorTime;
+
+        // 프로세서 점유율 계산
+        if( qwCurrentMeasureTickCount - qwLastMeasureTickCount == 0 )
+        {
+            pstRunningTask->qwProcessorShare = 0;
+        }
+        else
+        {
+            pstRunningTask->qwProcessorShare = (qwCurrentSpendTickInIdleTask - qwLastSpendTickInIdleTask) * 100 / (qwCurrentMeasureTickCount - qwLastMeasureTickCount);
+        }
+
         // 회전하는 바람개비 표시
         pstScreen[iOffset].bCharactor = vcData[i % 4];
         // 색깔 지정
@@ -719,7 +739,7 @@ static void kCreateTestTask(const char* pcParameterBuffer){
         // Type1 task
         case 1:
             for( i = 0 ; i < kAToI( vcCount, 10 ) ; i++ ){    
-                if( kCreateTask( bPriority | TASK_FLAGS_PROCESS, 0, 0, (QWORD) kTestTask1 ) == NULL ){
+                if( kCreateTask( bPriority | TASK_FLAGS_THREAD, 0, 0, (QWORD) kTestTask1 ) == NULL ){
                     break;
                 }
             }
@@ -730,7 +750,7 @@ static void kCreateTestTask(const char* pcParameterBuffer){
         case 2:
         default:
             for(i = 0; i < kAToI(vcCount, 10); i++){
-                if( kCreateTask(bPriority | TASK_FLAGS_PROCESS, 0, 0, ( QWORD ) kTestTask2 ) == NULL){
+                if( kCreateTask(bPriority | TASK_FLAGS_THREAD, 0, 0, ( QWORD ) kTestTask2 ) == NULL){
                     break;
                 }
             }
@@ -788,14 +808,16 @@ static void kShowTaskList( const char* pcParameterBuffer )
     int iCount = 0;
     
     kPrintf( "=========== Task Total Count [%d] ===========\n", kGetTaskCount() );
-    for( i = 0 ; i < TASK_MAXCOUNT ; i++ )
+    kPrintf("%d\n", kGetTickCount);
+    // 생성한 태스크끼리 fairness를 비교하기 위해 셸과 유휴태스크는 출력하지 않음
+    for( i = 2 ; i < TASK_MAXCOUNT ; i++ )
     {
         // TCB를 구해서 TCB가 사용 중이면 ID를 출력
         pstTCB = kGetTCBInTCBPool( i );
         if( ( pstTCB->stLink.qwID >> 32 ) != 0 )
         {
             // 태스크가 10개 출력될 때마다, 계속 태스크 정보를 표시할지 여부를 확인
-            if( ( iCount != 0 ) && ( ( iCount % 10 ) == 0 ) )
+            if( ( iCount != 0 ) && ( ( iCount % 18 ) == 0 ) )
             {
                 kPrintf( "Press any key to continue... ('q' is exit) : " );
                 if( kGetCh() == 'q' )
@@ -806,12 +828,14 @@ static void kShowTaskList( const char* pcParameterBuffer )
                 kPrintf( "\n" );
             }
             
-            kPrintf( "[%d] Task ID[0x%Q], Priority[%d], Flags[0x%Q], Thread[%d]\n", 1 + iCount++,
-                     pstTCB->stLink.qwID, GETPRIORITY( pstTCB->qwFlags ), 
-                     pstTCB->qwFlags, kGetListCount( &( pstTCB->stChildThreadList ) ) );
-            kPrintf( "    Parent PID[0x%Q], Memory Address[0x%Q], Size[0x%Q]\n",
-                    pstTCB->qwParentProcessID, pstTCB->pvMemoryAddress, pstTCB->qwMemorySize );
-        
+            kPrintf("[%d] ID[0x%Q], Priority[%d], Processor Share[%d%%]\n", 1 + iCount++, pstTCB->stLink.qwID, GETPRIORITY(pstTCB->qwFlags), pstTCB->qwProcessorShare);
+
+            // kPrintf( "[%d] Task ID[0x%Q], Priority[%d], Flags[0x%Q], Thread[%d]\n", 1 + iCount++,
+            //          pstTCB->stLink.qwID, GETPRIORITY( pstTCB->qwFlags ), 
+            //          pstTCB->qwFlags, kGetListCount( &( pstTCB->stChildThreadList ) ) );
+            // kPrintf( "    Parent PID[0x%Q], Memory Address[0x%Q], Size[0x%Q]\n",
+            //         pstTCB->qwParentProcessID, pstTCB->pvMemoryAddress, pstTCB->qwMemorySize );
+            // kPrintf("Processor Time[%d]\n", pstTCB->qwProcessorTime);
         }
     }
 }
@@ -1105,4 +1129,27 @@ static void kShowMatrix( const char* pcParameterBuffer )
         kPrintf( "Matrix Process Create Fail\n" );
     }
 }
-    
+
+/**
+ * 우선순위가 다른 태스크를 만듦(현재 환경에서는 5개의 우선순위)
+ */
+static void kPriorityTask(const char* pcParameterBuffer){
+    TCB* pstProcess;
+    int i, j;
+
+    for(i = 0; i < TASK_MAXREADYLISTCOUNT; i++){
+        // 우선순위별로 태스크를 3개씩 생성
+        for(j = 0; j < 3; j++){
+            pstProcess = kCreateTask( i | TASK_FLAGS_THREAD, 0, 0 , ( QWORD ) kTestTask2 );
+
+            if( pstProcess != NULL )
+            {
+                kPrintf( "Process [0x%Q] Create Success\n", pstProcess->stLink.qwID ); 
+            }
+            else
+            {
+                kPrintf( "Process Create Fail\n" );
+            }
+        } 
+    }  
+}

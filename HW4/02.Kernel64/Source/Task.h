@@ -65,11 +65,14 @@
 #define TASK_FLAGS_WAIT               0xFF  
 
 // 우선 순위 별 ticket 수
-#define TICKET_HIGHEST            50
-#define TICKET_HIGH               40
-#define TICKET_MEDIUM             30
-#define TICKET_LOW                20
+#define TICKET_HIGHEST            90
+#define TICKET_HIGH               60
+#define TICKET_MEDIUM             50
+#define TICKET_LOW                40
 #define TICKET_LOWEST             10
+
+// stride를 구하기 위한 임의의 큰 수
+#define TICKET_OPERAND            1800
 
 // 태스크의 플래그
 #define TASK_FLAGS_ENDTASK            0x8000000000000000
@@ -121,6 +124,11 @@ typedef struct kTaskControlBlockStruct
     QWORD qwStride;
     // stride에 의해 누적된 pass 값
     QWORD qwPass;
+
+    // 프로세서를 사용한 시간
+    QWORD qwProcessorTime;
+    // 프로세서 점유율
+    QWORD qwProcessorShare;
 
     //==========================================================================
     // 이하 스레드 정보
@@ -221,6 +229,7 @@ BOOL kIsTaskExist( QWORD qwID );
 QWORD kGetProcessorLoad( void );
 static TCB* kGetProcessByThread( TCB* pstThread );
 QWORD getrandom(int final);
+//static void kCommonTask();
 
 //==============================================================================
 //  유휴 태스크 관련
