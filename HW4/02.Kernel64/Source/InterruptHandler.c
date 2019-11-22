@@ -152,7 +152,7 @@ void kTimerHandler(int iVectorNumber){
     }
 
     // 0.5초 단위로 태스크 정보 출력(사용한 프로세서 시간을 확인하기 위함)
-    if(g_qwTickCount % 1000 == 0){
+    if(g_qwTickCount % 100 == 0){
         kCallCls();
         kCallTaskList();
     }

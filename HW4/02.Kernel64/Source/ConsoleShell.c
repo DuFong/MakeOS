@@ -808,9 +808,10 @@ static void kShowTaskList( const char* pcParameterBuffer )
     int i;
     TCB* pstTCB;
     int iCount = 0;
+    QWORD qwTickCount = kGetTickCount();
     
-    kPrintf( "=========== Task Total Count [%d] ===========\n", kGetTaskCount() );
-    kPrintf("Elapsed Time : %ds\n", kGetTickCount() / 1000);
+    kPrintf( "=========== Task Total Count [%d] ===========\n", kGetTaskCount() ); 
+    kPrintf("Elapsed Time : %d.%ds\n", qwTickCount / 1000, qwTickCount / 100);
     // 생성한 태스크끼리 fairness를 비교하기 위해 셸과 유휴태스크는 출력하지 않음
     for( i = 2 ; i < TASK_MAXCOUNT ; i++ )
     {
