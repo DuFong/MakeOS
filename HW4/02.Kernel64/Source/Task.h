@@ -72,7 +72,7 @@
 #define TICKET_LOWEST             10
 
 // stride를 구하기 위한 임의의 큰 수
-#define TICKET_OPERAND            1800
+#define STRIDE_RANDOM_NUM            1800
 
 // 태스크의 플래그
 #define TASK_FLAGS_ENDTASK            0x8000000000000000
@@ -229,6 +229,7 @@ BOOL kIsTaskExist( QWORD qwID );
 QWORD kGetProcessorLoad( void );
 static TCB* kGetProcessByThread( TCB* pstThread );
 QWORD getrandom(int final);
+QWORD kFindMinPass(void);
 //static void kCommonTask();
 
 //==============================================================================

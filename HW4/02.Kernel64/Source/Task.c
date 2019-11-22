@@ -150,7 +150,7 @@ TCB* kCreateTask( QWORD qwFlags, void* pvMemoryAddress, QWORD qwMemorySize,
     // TCB를 설정한 후 준비 리스트에 삽입하여 스케줄링될 수 있도록 함
     kSetUpTask( pstTask, qwFlags, qwEntryPointAddress, pvStackAddress, 
             TASK_STACKSIZE );
-    pstTask->qwPass = 0;
+    pstTask->qwPass = kFindMinPass();
 
     // 자식 스레드 리스트를 초기화
     kInitializeList( &( pstTask->stChildThreadList ) );
@@ -337,9 +337,9 @@ static TCB* kGetNextTaskToRun( void )
     }
     
     // Lottery Scheduler를 이용
-    pstTarget = kGetNextTaskToRunbyLottery(totaltickets);
+    //pstTarget = kGetNextTaskToRunbyLottery(totaltickets);
     // Stride Scheduler를 이용
-    //pstTarget = kGetNextTaskToRunbyStride(totaltickets);
+    pstTarget = kGetNextTaskToRunbyStride(totaltickets);
 
     return pstTarget;
 }
@@ -501,7 +501,7 @@ void kSetTicketAndStride(TCB* pstTask, BYTE bPriority){
             break;
     }
 
-    pstTask->qwStride = TICKET_OPERAND / pstTask->ticket;
+    pstTask->qwStride = STRIDE_RANDOM_NUM / pstTask->ticket;
 }
 
 /**
@@ -1067,4 +1067,32 @@ void kHaltProcessorByLoad( void )
     {
         kHlt();
     }
+}
+
+QWORD kFindMinPass(void){
+    TCB* pstCurrent = NULL;
+    QWORD iMinPass = 0x7FFFFFFFFFFFFFFF;
+    int iTaskCount, i;
+
+    for(i = 0; i < TASK_MAXREADYLISTCOUNT; i++){
+        iTaskCount = kGetListCount( &( gs_stScheduler.vstReadyList[ i ] ) );
+        if(iTaskCount == 0) continue;
+
+        pstCurrent = (TCB*) kGetHeaderFromList(&(gs_stScheduler.vstReadyList[i]));
+
+        while(pstCurrent){
+            // 가장 작은 pass값을 찾음
+            if(iMinPass > pstCurrent->qwPass){
+                iMinPass = pstCurrent->qwPass;
+            }
+            if(pstCurrent == kGetTailFromList(&(gs_stScheduler.vstReadyList[i]))){
+                break;
+            }
+            pstCurrent = kGetNextFromList(&(gs_stScheduler.vstReadyList[i]), pstCurrent);
+        }
+    }
+
+    if(iMinPass == 0x7FFFFFFFFFFFFFFF)
+        return 0;
+    return iMinPass;
 }
