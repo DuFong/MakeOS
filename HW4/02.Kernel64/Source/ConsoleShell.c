@@ -46,6 +46,8 @@ void kStartConsoleShell(){
     BYTE bbKey = 0;     //이전에 입력한 키값
     int iCursorX, iCursorY;
 
+    // 셸 시작과 동시에 15개의 태스크 생성
+    kPriorityTask(NULL);
     kPrintf(CONSOLESHELL_PROMPTMESSAGE);
 
     while(1){
@@ -808,7 +810,7 @@ static void kShowTaskList( const char* pcParameterBuffer )
     int iCount = 0;
     
     kPrintf( "=========== Task Total Count [%d] ===========\n", kGetTaskCount() );
-    kPrintf("%d\n", kGetTickCount);
+    kPrintf("Elapsed Time : %ds\n", kGetTickCount() / 1000);
     // 생성한 태스크끼리 fairness를 비교하기 위해 셸과 유휴태스크는 출력하지 않음
     for( i = 2 ; i < TASK_MAXCOUNT ; i++ )
     {
@@ -828,7 +830,8 @@ static void kShowTaskList( const char* pcParameterBuffer )
                 kPrintf( "\n" );
             }
             
-            kPrintf("[%d] ID[0x%Q], Priority[%d], Processor Share[%d%%]\n", 1 + iCount++, pstTCB->stLink.qwID, GETPRIORITY(pstTCB->qwFlags), pstTCB->qwProcessorShare);
+            kPrintf("[%d] ID[0x%Q], Priority[%d], Processor Share[%d%%], Processor Time[%d]\n", 
+                1 + iCount++, pstTCB->stLink.qwID, GETPRIORITY(pstTCB->qwFlags), pstTCB->qwProcessorShare, pstTCB->qwProcessorTime);
 
             // kPrintf( "[%d] Task ID[0x%Q], Priority[%d], Flags[0x%Q], Thread[%d]\n", 1 + iCount++,
             //          pstTCB->stLink.qwID, GETPRIORITY( pstTCB->qwFlags ), 
@@ -1152,4 +1155,14 @@ static void kPriorityTask(const char* pcParameterBuffer){
             }
         } 
     }  
+}
+
+
+
+void kCallCls(){
+    kCls(NULL);
+}
+
+void kCallTaskList(){
+    kShowTaskList(NULL);
 }

@@ -5,6 +5,7 @@
 #include "Utility.h"
 #include "Task.h"
 #include "Descriptor.h"
+#include "ConsoleShell.h"
 
 static inline void invlpg(void* m){
     asm volatile("invlpg (%0)" ::"b"(m) : "memory");
@@ -148,5 +149,11 @@ void kTimerHandler(int iVectorNumber){
     // 프로세서가 사용할 수 있는 시간을 다 썼다면 태스크 전환 수행
     if(kIsProcessorTimeExpired() == TRUE){
         kScheduleInInterrupt();
+    }
+
+    // 0.5초 단위로 태스크 정보 출력(사용한 프로세서 시간을 확인하기 위함)
+    if(g_qwTickCount % 1000 == 0){
+        kCallCls();
+        kCallTaskList();
     }
 }

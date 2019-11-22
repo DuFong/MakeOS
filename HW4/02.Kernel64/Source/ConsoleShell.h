@@ -61,4 +61,7 @@ static void kTestThread(const char* pcParameterBuffer);
 static void kShowMatrix(const char* pcParameterBuffer);
 static void kPriorityTask(const char* pcParameterBuffer);
 
+void kCallCls();
+void kCallTaskList();
+
 #endif /*__CONSOLESHELL_H__*/
