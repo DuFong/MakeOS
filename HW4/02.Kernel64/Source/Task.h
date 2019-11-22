@@ -41,7 +41,7 @@
 
 // 태스크 풀의 어드레스
 #define TASK_TCBPOOLADDRESS     0x800000
-#define TASK_MAXCOUNT           256
+#define TASK_MAXCOUNT           1024
 
 // 스택 풀과 스택의 크기
 #define TASK_STACKPOOLADDRESS   ( TASK_TCBPOOLADDRESS + sizeof( TCB ) * TASK_MAXCOUNT )
