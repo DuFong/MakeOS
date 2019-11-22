@@ -23,6 +23,15 @@ int kMemCpy(void* pvDestination, const void* pvSource, int iSize){
 
     return iSize;
 }
+int krMemCpy(void* pvDestination, const void* pvSource, int iSize){
+    int i;
+
+    for(i = iSize-1; i>=0; i--){
+        ((char*) pvDestination)[i] = ((char*) pvSource)[i];
+    }
+
+    return iSize;
+}
 
 // 메모리 비교
 int kMemCmp(const void* pvDestination, const void* pvSource, int iSize){

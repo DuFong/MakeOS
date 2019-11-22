@@ -38,6 +38,8 @@ int cnt = 0;        //historyCommand[]에 있는 명령어 수(10개를 넘어�
 int cidx = 0;       //up, down키 눌러서 가리키는 위치
 int ccnt = 0;       //up키는 최대 10번 누를 수 있도록 check
 
+scrollDownPointer = 0;
+
 // 셸의 메인 루프
 void kStartConsoleShell(){
     char vcCommandBuffer[CONSOLESHELL_MAXCOMMANDBUFFERCOUNT];
@@ -47,7 +49,7 @@ void kStartConsoleShell(){
     int iCursorX, iCursorY;
 
     // 셸 시작과 동시에 15개의 태스크 생성
-    kPriorityTask(NULL);
+    //kPriorityTask(NULL);
     kPrintf(CONSOLESHELL_PROMPTMESSAGE);
 
     while(1){
@@ -178,6 +180,38 @@ void kStartConsoleShell(){
                     kMemCpy(vcCommandBuffer, historyCommand[cidx], iCommandBufferIndex);
                 }
             }
+        }
+        else if(bKey == KEY_F11){
+            if (scrollUpPointer > 0){
+                
+                ////Store down row
+                kMemCpy(SCROLLSAVEDOWN + scrollDownPointer * SCROLL_ROW , CONSOLE_VIDEOMEMORYADDRESS + (CONSOLE_HEIGHT - 1) * SCROLL_ROW,  SCROLL_ROW);
+
+                scrollDownPointer++;
+
+                //put (1) ~ (end-1) to (2) ~ (end) 
+                krMemCpy(CONSOLE_VIDEOMEMORYADDRESS + SCROLL_ROW, CONSOLE_VIDEOMEMORYADDRESS, (CONSOLE_HEIGHT - 1) * SCROLL_ROW);
+                
+                //load stored (1)(up) row
+                kMemCpy(CONSOLE_VIDEOMEMORYADDRESS, SCROLLSAVEUP + (scrollUpPointer - 1) * SCROLL_ROW , SCROLL_ROW);
+                
+                scrollUpPointer--;
+            }
+        }
+        else if(bKey == KEY_F12){
+            if(scrollDownPointer > 0){
+                
+                scrollUpPointer++;
+                
+                //put (2) ~ (end) to (1) ~ (end-1)
+                kMemCpy(CONSOLE_VIDEOMEMORYADDRESS , CONSOLE_VIDEOMEMORYADDRESS + SCROLL_ROW, (CONSOLE_HEIGHT - 1) * SCROLL_ROW);            
+
+                kMemCpy(CONSOLE_VIDEOMEMORYADDRESS + (CONSOLE_HEIGHT - 1) * SCROLL_ROW, SCROLLSAVEDOWN + (scrollDownPointer - 1) * SCROLL_ROW , SCROLL_ROW);
+                
+                scrollDownPointer--;
+
+            }
+            
         }
         else if((bKey == KEY_LSHIFT) || (bKey == KEY_RSHIFT) || (bKey == KEY_CAPSLOCK) || (bKey == KEY_NUMLOCK) || (bKey == KEY_SCROLLLOCK)){
             ;

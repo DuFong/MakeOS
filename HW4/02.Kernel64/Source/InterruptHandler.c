@@ -93,7 +93,7 @@ void kCommonInterruptHandler(int iVectorNumber){
     // 발생한 횟수 출력
     vcBuffer[8] = '0' + g_iCommonInterruptCount;
     g_iCommonInterruptCount = (g_iCommonInterruptCount + 1) % 10;
-    kPrintStringXY(70, 0, vcBuffer);
+    //kPrintStringXY(70, 0, vcBuffer);
     //===============================================================
 
     // EOI 전송
@@ -112,7 +112,7 @@ void kKeyboardHandler(int iVectorNumber){
     // 발생한 횟수 출력
     vcBuffer[8] = '0' + g_iKeyboardInterruptCount;
     g_iKeyboardInterruptCount = (g_iKeyboardInterruptCount + 1) % 10;
-    kPrintStringXY(0, 0, vcBuffer);
+    //kPrintStringXY(0, 0, vcBuffer);
     //===============================================================
 
     // 키보드 컨트롤러에서 데이터를 읽어서 아스키로 변환하여 큐에 삽입
@@ -136,7 +136,7 @@ void kTimerHandler(int iVectorNumber){
     // 발생한 횟수 출력
     vcBuffer[8] = '0' + g_iTimerInterruptCounter;
     g_iTimerInterruptCounter = (g_iTimerInterruptCounter + 1) % 10;
-    kPrintStringXY(70, 0, vcBuffer);
+    //kPrintStringXY(70, 0, vcBuffer);
     //===============================================================
 
     // EOI 전송
@@ -152,8 +152,8 @@ void kTimerHandler(int iVectorNumber){
     }
 
     // 0.5초 단위로 태스크 정보 출력(사용한 프로세서 시간을 확인하기 위함)
-    if(g_qwTickCount % 100 == 0){
-        kCallCls();
-        kCallTaskList();
-    }
+    // if(g_qwTickCount % 100 == 0){
+    //     kCallCls();
+    //     kCallTaskList();
+    // }
 }

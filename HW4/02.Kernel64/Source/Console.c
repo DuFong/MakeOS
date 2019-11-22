@@ -5,6 +5,8 @@
 // 콘솔의 정보를 관리하는 자료구조
 CONSOLEMANAGER gs_stConsoleManager = {0, };
 
+scrollUpPointer = 0;
+
 // 콘솔 초기화
 void kInitializeConsole(int iX, int iY){
     // 자료구조를 모두 0으로 초기화
@@ -88,9 +90,16 @@ int kConsolePrintString(const char* pcBuffer){
 
         // 출력할 위치가 화면의 최댓값을 벗어났으면 스크롤 처리
         if(iPrintOffset >= (CONSOLE_HEIGHT * CONSOLE_WIDTH)){
-            // 가장 윗줄을 제외한 나머지를 한 줄 위로 복사
-            kMemCpy(CONSOLE_VIDEOMEMORYADDRESS, CONSOLE_VIDEOMEMORYADDRESS + CONSOLE_WIDTH * sizeof(CHARACTER), (CONSOLE_HEIGHT - 1) * CONSOLE_WIDTH * sizeof(CHARACTER));
+            
+            //Store up row
+            kMemCpy(SCROLLSAVEUP + scrollUpPointer * SCROLL_ROW , CONSOLE_VIDEOMEMORYADDRESS,  SCROLL_ROW);
 
+            //put (2) ~ (end) to (1) ~ (end-1)
+            kMemCpy(CONSOLE_VIDEOMEMORYADDRESS, CONSOLE_VIDEOMEMORYADDRESS + SCROLL_ROW, (CONSOLE_HEIGHT - 1) * SCROLL_ROW);
+            
+            if(scrollUpPointer<100){
+                scrollUpPointer++;
+            }
             // 가장 마지막 라인은 공백으로 채움
             for(j = (CONSOLE_HEIGHT - 1) * (CONSOLE_WIDTH) ; j < (CONSOLE_HEIGHT * CONSOLE_WIDTH); j++){
                 pstScreen[j].bCharactor = ' ';

@@ -3,7 +3,7 @@
  *  date    2009/01/31
  *  author  kkamagui 
  *          Copyright(c)2008 All rights reserved by kkamagui
- *  brief   ÄÜ¼Ö¿¡ °ü·ÃµÈ Çì´õ ÆÄÀÏ
+ *  brief   ï¿½Ü¼Ö¿ï¿½ ï¿½ï¿½ï¿½Ãµï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
  */
 
 #ifndef __CONSOLE_H__
@@ -13,10 +13,10 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 //
-// ¸ÅÅ©·Î
+// ï¿½ï¿½Å©ï¿½ï¿½
 //
 ////////////////////////////////////////////////////////////////////////////////
-// ºñµð¿À ¸Þ¸ð¸®ÀÇ ¼Ó¼º(Attribute) °ª ¼³Á¤
+// ï¿½ï¿½ï¿½ï¿½ ï¿½Þ¸ï¿½ï¿½ï¿½ ï¿½Ó¼ï¿½(Attribute) ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 #define CONSOLE_BACKGROUND_BLACK            0x00
 #define CONSOLE_BACKGROUND_BLUE             0x10
 #define CONSOLE_BACKGROUND_GREEN            0x20
@@ -42,16 +42,16 @@
 #define CONSOLE_FOREGROUND_BRIGHTMAGENTA    0x0D
 #define CONSOLE_FOREGROUND_BRIGHTYELLOW     0x0E
 #define CONSOLE_FOREGROUND_BRIGHTWHITE      0x0F
-// ±âº» ¹®ÀÚ »ö»ó
+// ï¿½âº» ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 #define CONSOLE_DEFAULTTEXTCOLOR            ( CONSOLE_BACKGROUND_BLACK | \
         CONSOLE_FOREGROUND_BRIGHTGREEN )
 
-// ÄÜ¼ÖÀÇ ³Êºñ(Width)¿Í ³ôÀÌ(Height),±×¸®°í ºñµð¿À ¸Þ¸ð¸®ÀÇ ½ÃÀÛ ¾îµå·¹½º ¼³Á¤
+// ï¿½Ü¼ï¿½ï¿½ï¿½ ï¿½Êºï¿½(Width)ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½(Height),ï¿½×¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Þ¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½å·¹ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 #define CONSOLE_WIDTH               80
 #define CONSOLE_HEIGHT              25
 #define CONSOLE_VIDEOMEMORYADDRESS  0xB8000
 
-// ºñµð¿À ÄÁÆ®·Ñ·¯ÀÇ I/O Æ÷Æ® ¾îµå·¹½º¿Í ·¹Áö½ºÅÍ
+// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ®ï¿½Ñ·ï¿½ï¿½ï¿½ I/O ï¿½ï¿½Æ® ï¿½ï¿½å·¹ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 #define VGA_PORT_INDEX              0x3D4
 #define VGA_PORT_DATA               0x3D5
 #define VGA_INDEX_UPPERCURSOR       0x0E
@@ -59,24 +59,32 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 //
-// ±¸Á¶Ã¼
+// ï¿½ï¿½ï¿½ï¿½Ã¼
 //
 ////////////////////////////////////////////////////////////////////////////////
-// 1¹ÙÀÌÆ®·Î Á¤·Ä
+// 1ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 #pragma pack( push, 1 )
 
-// ÄÜ¼Ö¿¡ ´ëÇÑ Á¤º¸¸¦ ÀúÀåÇÏ´Â ÀÚ·á±¸Á¶
+// ï¿½Ü¼Ö¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½Ú·á±¸ï¿½ï¿½
 typedef struct kConsoleManagerStruct
 {
-    // ¹®ÀÚ¿Í Ä¿¼­¸¦ Ãâ·ÂÇÒ À§Ä¡
+    // ï¿½ï¿½ï¿½Ú¿ï¿½ Ä¿ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡
     int iCurrentPrintOffset;
 } CONSOLEMANAGER;
 
 #pragma pack( pop )
 
+
+CHARACTER SCROLLSAVEUP[80*250];
+CHARACTER SCROLLSAVEDOWN[80*250];
+int scrollUpPointer;
+int scrollDownPointer;
+
+#define SCROLL_ROW     CONSOLE_WIDTH * sizeof(CHARACTER)
+
 ////////////////////////////////////////////////////////////////////////////////
 //
-// ÇÔ¼ö
+// ï¿½Ô¼ï¿½
 //
 ////////////////////////////////////////////////////////////////////////////////
 void kInitializeConsole( int iX, int iY );
