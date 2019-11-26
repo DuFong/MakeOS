@@ -7,6 +7,7 @@
 #include "Task.h"
 #include "PIT.h"
 #include "ScreenSaver.h"
+#include "DynamicMemory.h"
 
 // 함수 선언
 void kPrintString( int iX, int iY, const char* pcString );
@@ -52,6 +53,12 @@ void Main( void )
     kPrintf( "TCB Pool And Scheduler Initialize...........[Pass]\n" );
     iCursorY++;
     kInitializeScheduler();
+
+    // 동적 메모리 초기화
+    kPrintf( "Dynamic Memory Initialize...................[Pass]\n" );
+    iCursorY++;
+    kInitializeDynamicMemory();
+    
     // 1ms당 한 번씩 인터럽트가 발생하도록 설정
     kInitializePIT(MSTOCOUNT(1), 1);
 

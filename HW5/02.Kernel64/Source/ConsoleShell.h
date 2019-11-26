@@ -63,6 +63,10 @@ static void kPriorityTask(const char* pcParameterBuffer);
 static void kSetScreenTimer(const char* pcParameterBuffer);
 static void kScreenSaverProcess();
 static void kCreateScreenSaverTask();
+static void kShowDyanmicMemoryInformation( const char* pcParameterBuffer );
+static void kTestSequentialAllocation( const char* pcParameterBuffer );
+static void kTestRandomAllocation( const char* pcParameterBuffer );
+static void kRandomAllocationTask( void );
 
 void kCallCls();
 void kCallTaskList();
