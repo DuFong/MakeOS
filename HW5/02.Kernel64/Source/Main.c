@@ -9,6 +9,7 @@
 #include "ScreenSaver.h"
 #include "DynamicMemory.h"
 #include "HardDisk.h"
+#include "FileSystem.h"
 
 // 함수 선언
 void kPrintString( int iX, int iY, const char* pcString );
@@ -92,6 +93,19 @@ void Main( void )
     // 하드 디스크를 초기화
     kPrintf( "HDD Initialize..............................[    ]" );
     if( kInitializeHDD() == TRUE )
+    {
+        kSetCursor( 45, iCursorY++ );
+        kPrintf( "Pass\n" );
+    }
+    else
+    {
+        kSetCursor( 45, iCursorY++ );
+        kPrintf( "Fail\n" );
+    }
+
+    // 파일 시스템을 초기화
+    kPrintf( "File System Initialize......................[    ]" );
+    if( kInitializeFileSystem() == TRUE )
     {
         kSetCursor( 45, iCursorY++ );
         kPrintf( "Pass\n" );
