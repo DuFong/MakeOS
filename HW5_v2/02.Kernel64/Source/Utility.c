@@ -4,14 +4,46 @@
 
 volatile QWORD g_qwTickCount = 0;
 
-// 메모리를 특정 값으로 채움
-void kMemSet(void* pvDestination, BYTE bData, int iSize){
+/**
+ *  메모리를 특정 값으로 채움
+ */
+void kMemSet( void* pvDestination, BYTE bData, int iSize )
+{
     int i;
-
-    for(i = 0; i < iSize; i++){
-        ((char*) pvDestination)[i] = bData;
+    QWORD qwData;
+    int iRemainByteStartOffset;
+    
+    // 8 바이트 데이터를 채움
+    qwData = 0;
+    for( i = 0 ; i < 8 ; i++ )
+    {
+        qwData = ( qwData << 8 ) | bData;
+    }
+    
+    // 8 바이트씩 먼저 채움
+    for( i = 0 ; i < ( iSize / 8 ) ; i++ )
+    {
+        ( ( QWORD* ) pvDestination )[ i ] = qwData;
+    }
+    
+    // 8 바이트씩 채우고 남은 부분을 마무리
+    iRemainByteStartOffset = i * 8;
+    for( i = 0 ; i < ( iSize % 8 ) ; i++ )
+    {
+        ( ( char* ) pvDestination )[ iRemainByteStartOffset++ ] = bData;
     }
 }
+/*
+void kMemSet( void* pvDestination, BYTE bData, int iSize )
+{
+    int i;
+    
+    for( i = 0 ; i < iSize ; i++ )
+    {
+        ( ( char* ) pvDestination )[ i ] = bData;
+    }
+}
+*/
 
 // 메모리 복사
 int kMemCpy(void* pvDestination, const void* pvSource, int iSize){
