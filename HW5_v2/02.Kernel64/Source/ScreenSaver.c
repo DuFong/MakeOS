@@ -5,8 +5,8 @@ SCREENSAVER g_stScreenSaver;
 
 void kInitializeScreenSaver(){
     g_stScreenSaver.qwScreenOnCount = 0;
-    // 10초 후에 화면보호기가 켜지도록 설정
-    g_stScreenSaver.qwRestrictionScreenOn = 10000;
+    // 2분 후에 화면보호기가 켜지도록 설정
+    g_stScreenSaver.qwRestrictionScreenOn = 120000;
     g_stScreenSaver.bScreenSaverOn = FALSE;
     g_stScreenSaver.pstProcess = NULL;
 }
