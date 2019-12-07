@@ -2221,3 +2221,46 @@ static int kFindFreeLoginEntry( void )
     }
     return -1;
 }
+
+BOOL kChangePassword(char* userName, char* inputpasswd){
+    LOGINENTRY* loginEntry;
+    int passLength, nameLength;
+    char vcPassword[FILESYSTEM_MAXPASSWORDLENGTH];
+    
+    // 파일 시스템을 인식하지 못했거나 인덱스가 올바르지 않으면 실패
+    if( ( gs_stFileSystemManager.bMounted == FALSE ) )
+    {
+        return FALSE;
+    }
+
+    // 루트 디렉터리를 읽음
+    if( kReadCluster( LOGIN_CLUSTER_NUM, gs_vbTempBuffer ) == FALSE )
+    {
+        return FALSE;
+    }    
+    
+    // 루트 디렉터리에 있는 해당 데이터를 갱신
+    loginEntry = ( LOGINENTRY* ) gs_vbTempBuffer;
+
+    // userName과 같은 엔트리를 찾은 후 inputpasswd와 같은지 확인해야함
+    nameLength = kStrLen( userName );
+    passLength = kStrLen( inputpasswd );
+
+    for( int i = 0 ; i < FILESYSTEM_MAXLOGINENTRYCOUNT ; i++ )
+    {
+        if( kMemCmp( loginEntry[ i ].userName, userName, nameLength ) == 0 )
+        {
+            if( kMemCmp( loginEntry[ i ].password, inputpasswd, passLength ) == 0 ){
+                // 비밀번호 변경하고 다시 저장
+                kPrintf("Enter your NEW password: ");
+                kScanf(vcPassword, FALSE);
+                kMemCpy(loginEntry[i].password, vcPassword, kStrLen(vcPassword));
+                if( kWriteCluster( LOGIN_CLUSTER_NUM, loginEntry ) == FALSE ){
+                    return FALSE;
+                }
+                return TRUE;
+            }
+        }
+    }
+    return FALSE;
+}
