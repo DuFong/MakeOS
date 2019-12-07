@@ -11,6 +11,9 @@
 #include "DynamicMemory.h"
 #include "Task.h"
 #include "Utility.h"
+#include "CacheManager.h"
+#include "RAMDisk.h"
+
 
 // 파일 시스템 자료구조
 static FILESYSTEMMANAGER   gs_stFileSystemManager;
@@ -22,18 +25,13 @@ fReadHDDInformation gs_pfReadHDDInformation = NULL;
 fReadHDDSector gs_pfReadHDDSector = NULL;
 fWriteHDDSector gs_pfWriteHDDSector = NULL;
 
-char prompt_path[100];
-DWORD currentClusterIndex = 0;
-
-void kSetClusterIndex(DWORD currentDirectoryClusterIndex)
-{
-    currentClusterIndex = currentDirectoryClusterIndex;
-}
 /**
  *  파일 시스템을 초기화
  */
 BOOL kInitializeFileSystem( void )
 {
+    BOOL bCacheEnable = FALSE;
+    
     // 자료구조 초기화와 동기화 객체 초기화
     kMemSet( &gs_stFileSystemManager, 0, sizeof( gs_stFileSystemManager ) );
     kInitializeMutex( &( gs_stFileSystemManager.stMutex ) );
@@ -45,6 +43,23 @@ BOOL kInitializeFileSystem( void )
         gs_pfReadHDDInformation = kReadHDDInformation;
         gs_pfReadHDDSector = kReadHDDSector;
         gs_pfWriteHDDSector = kWriteHDDSector;
+
+        // 캐시를 활성화함
+        bCacheEnable = TRUE;
+    }
+    // 하드 디스크 초기화가 실패하면 8Mbyte 크기의 램 디스크를 생성
+    else if( kInitializeRDD( RDD_TOTALSECTORCOUNT ) == TRUE )
+    {
+        // 초기화가 성공하면 함수 포인터를 램 디스크용 함수로 설정
+        gs_pfReadHDDInformation = kReadRDDInformation;
+        gs_pfReadHDDSector = kReadRDDSector;
+        gs_pfWriteHDDSector = kWriteRDDSector;
+        
+        // 램 디스크는 데이터가 남아있지 않으므로 매번 파일 시스템을 생성함
+        if( kFormat() == FALSE )
+        {
+            return FALSE;
+        }   
     }
     else
     {
@@ -72,6 +87,11 @@ BOOL kInitializeFileSystem( void )
     kMemSet( gs_stFileSystemManager.pstHandlePool, 0, 
             FILESYSTEM_HANDLE_MAXCOUNT * sizeof( FILE ) );    
     
+    // 캐시 활성화
+    if( bCacheEnable == TRUE )
+    {
+        gs_stFileSystemManager.bCacheEnable = kInitializeCacheManager();    
+    }
     return TRUE;
 }
 
@@ -220,58 +240,19 @@ BOOL kFormat( void )
             kUnlock( &( gs_stFileSystemManager.stMutex ) );
             return FALSE;
         }
-    }
-
+    }    
     
-    kSetDotInDirectory();
+    // 캐시 버퍼를 모두 버림
+    if( gs_stFileSystemManager.bCacheEnable == TRUE )
+    {
+        kDiscardAllCacheBuffer( CACHE_CLUSTERLINKTABLEAREA );
+        kDiscardAllCacheBuffer( CACHE_DATAAREA );
+    }
     
     // 동기화 처리
     kUnlock( &( gs_stFileSystemManager.stMutex ) );
     return TRUE;
 }
-
-/** 
- * 디렉토리의 dot, dot dot 생성
- */
-void kSetDotInDirectory(){
-    DIRECTORYENTRY stEntry;
-    int iDirectoryEntryOffset = 0;
-
-    // 디렉터리 엔트리를 설정
-    kMemCpy( stEntry.vcFileName, ".", 2 );
-    stEntry.dwStartClusterIndex = -1;
-    stEntry.dwFileSize = 0;
-    stEntry.flag=1;
-    stEntry.ParentDirectoryCluserIndex = 0;
-    stEntry.ParentDirectoryPath[0] = '/';
-    stEntry.ParentDirectoryPath[1] = '\0';
-    
-    
-    // 디렉터리 엔트리를 등록
-    if( kSetDirectoryEntryData( iDirectoryEntryOffset, &stEntry ) == FALSE )
-    {
-        
-        return FALSE;
-    }
-
-     // 디렉터리 엔트리를 설정
-    kMemCpy( stEntry.vcFileName, "..", 3 );
-    stEntry.dwStartClusterIndex = -2;
-    stEntry.dwFileSize = 0;
-    stEntry.flag=1;
-    stEntry.ParentDirectoryCluserIndex = 0;
-    stEntry.ParentDirectoryPath[0] = '/';
-    stEntry.ParentDirectoryPath[1] = '\0';
-   
-    
-    iDirectoryEntryOffset = 1;
-    // 디렉터리 엔트리를 등록
-    if( kSetDirectoryEntryData( iDirectoryEntryOffset, &stEntry ) == FALSE )
-    {
-        return FALSE;
-    }
-}
-
 
 /**
  *  파일 시스템에 연결된 하드 디스크의 정보를 반환
@@ -296,9 +277,127 @@ BOOL kGetHDDInformation( HDDINFORMATION* pstInformation)
  */
 static BOOL kReadClusterLinkTable( DWORD dwOffset, BYTE* pbBuffer )
 {
+    // 캐시 여부에 따라 다른 읽기 함수 호출
+    if( gs_stFileSystemManager.bCacheEnable == FALSE )
+    {
+        kInternalReadClusterLinkTableWithoutCache( dwOffset, pbBuffer );
+    }
+    else
+    {
+        kInternalReadClusterLinkTableWithCache( dwOffset, pbBuffer );
+    }
+}
+
+/**
+ *  클러스터 링크 테이블 내의 오프셋에서 한 섹터를 읽음
+ *      내부적으로 사용하는 함수, 캐시 사용 안함
+ */
+static BOOL kInternalReadClusterLinkTableWithoutCache( DWORD dwOffset, 
+        BYTE* pbBuffer )
+{
     // 클러스터 링크 테이블 영역의 시작 어드레스를 더함
     return gs_pfReadHDDSector( TRUE, TRUE, dwOffset + 
               gs_stFileSystemManager.dwClusterLinkAreaStartAddress, 1, pbBuffer );
+}
+
+/**
+ *  클러스터 링크 테이블 내의 오프셋에서 한 섹터를 읽음
+ *      내부적으로 사용하는 함수, 캐시 사용
+ */
+static BOOL kInternalReadClusterLinkTableWithCache( DWORD dwOffset, 
+        BYTE* pbBuffer )
+{
+    CACHEBUFFER* pstCacheBuffer;
+    
+    // 먼저 캐시에 해당 클러스터 링크 테이블이 있는지 확인
+    pstCacheBuffer = kFindCacheBuffer( CACHE_CLUSTERLINKTABLEAREA, dwOffset );
+
+    // 캐시 버퍼에 있다면 캐시의 내용을 복사
+    if( pstCacheBuffer != NULL )
+    {
+        kMemCpy( pbBuffer, pstCacheBuffer->pbBuffer, 512 );
+        return TRUE;
+    }
+    
+    // 캐시 버퍼에 없다면 하드 디스크에서 직접 읽음
+    if( kInternalReadClusterLinkTableWithoutCache( dwOffset, pbBuffer ) == FALSE )
+    {
+        return FALSE;
+    }
+    
+    // 캐시를 할당 받아서 캐시 내용을 갱신
+    pstCacheBuffer = kAllocateCacheBufferWithFlush( CACHE_CLUSTERLINKTABLEAREA );
+    if( pstCacheBuffer == NULL )
+    {
+        return FALSE;
+    }    
+
+    // 캐시 버퍼에 읽은 내용을 복사한 후, 태그 정보를 갱신
+    kMemCpy( pstCacheBuffer->pbBuffer, pbBuffer, 512 );
+    pstCacheBuffer->dwTag = dwOffset;
+    
+    // 읽기를 수행했으므로 버퍼의 내용을 수정되지 않은 것으로 표시
+    pstCacheBuffer->bChanged = FALSE;
+    return TRUE;
+}
+
+/**
+ *  클러스터 링크 테이블 영역의 캐시 버퍼 또는 데이터 영역의 캐시 버퍼에서 할당
+ *      빈 캐시 버퍼가 없는 경우 오래된 것 중에 하나를 골라서 비운 후 사용
+ */
+static CACHEBUFFER* kAllocateCacheBufferWithFlush( int iCacheTableIndex )
+{
+    CACHEBUFFER* pstCacheBuffer;
+    
+    // 캐시 버퍼에 없다면 캐시를 할당 받아서 캐시 내용을 갱신
+    pstCacheBuffer = kAllocateCacheBuffer( iCacheTableIndex );
+    // 캐시를 할당 받을 수 없다면 캐시 버퍼에서 오래된 것을 찾아 버린 후 사용
+    if( pstCacheBuffer == NULL )
+    {
+        pstCacheBuffer = kGetVictimInCacheBuffer( iCacheTableIndex );
+        // 오래된 캐시 버퍼도 할당 받을 수 없으면 오류
+        if( pstCacheBuffer == NULL )
+        {
+            kPrintf( "Cache Allocate Fail~!!!!\n" );
+            return NULL;
+        }
+
+        // 캐시 버퍼의 데이터가 수정되었다면 하드 디스크로 옮겨야 함
+        if( pstCacheBuffer->bChanged == TRUE )
+        {
+            switch( iCacheTableIndex )
+            {
+                // 클러스터 링크 테이블 영역의 캐시인 경우
+            case CACHE_CLUSTERLINKTABLEAREA:
+                // 쓰기가 실패한다면 오류
+                if( kInternalWriteClusterLinkTableWithoutCache( 
+                    pstCacheBuffer->dwTag, pstCacheBuffer->pbBuffer ) == FALSE )
+                {
+                    kPrintf( "Cache Buffer Write Fail~!!!!\n" );
+                    return NULL;
+                }
+                break;
+                
+                // 데이터 영역의 캐시인 경우
+            case CACHE_DATAAREA:
+                // 쓰기가 실패한다면 오류
+                if( kInternalWriteClusterWithoutCache( 
+                    pstCacheBuffer->dwTag, pstCacheBuffer->pbBuffer ) == FALSE )
+                {
+                    kPrintf( "Cache Buffer Write Fail~!!!!\n" );
+                    return NULL;
+                }
+                break;
+                
+                // 기타는 오류
+            default:
+                kPrintf( "kAllocateCacheBufferWithFlush Fail\n" );
+                return NULL;
+                break;
+            }
+        }
+    }    
+    return pstCacheBuffer;
 }
 
 /**
@@ -306,15 +405,89 @@ static BOOL kReadClusterLinkTable( DWORD dwOffset, BYTE* pbBuffer )
  */
 static BOOL kWriteClusterLinkTable( DWORD dwOffset, BYTE* pbBuffer )
 {
+    // 캐시 여부에 따라 다른 쓰기 함수 호출
+    if( gs_stFileSystemManager.bCacheEnable == FALSE )
+    {
+        return kInternalWriteClusterLinkTableWithoutCache( dwOffset, pbBuffer );
+    }
+    else
+    {
+        return kInternalWriteClusterLinkTableWithCache( dwOffset, pbBuffer );
+    }
+}
+
+/**
+ *  클러스터 링크 테이블 내의 오프셋에 한 섹터를 씀
+ *      내부적으로 사용하는 함수, 캐시 사용 안 함
+ */
+static BOOL kInternalWriteClusterLinkTableWithoutCache( DWORD dwOffset, 
+        BYTE* pbBuffer )
+{
     // 클러스터 링크 테이블 영역의 시작 어드레스를 더함
     return gs_pfWriteHDDSector( TRUE, TRUE, dwOffset + 
                gs_stFileSystemManager.dwClusterLinkAreaStartAddress, 1, pbBuffer );
 }
 
 /**
+ *  클러스터 링크 테이블 내의 오프셋에 한 섹터를 씀
+ *      내부적으로 사용하는 함수, 캐시 사용
+ */
+static BOOL kInternalWriteClusterLinkTableWithCache( DWORD dwOffset, 
+        BYTE* pbBuffer )
+{
+    CACHEBUFFER* pstCacheBuffer;
+    
+    // 캐시에 해당 클러스터 링크 테이블이 있는지 확인
+    pstCacheBuffer = kFindCacheBuffer( CACHE_CLUSTERLINKTABLEAREA, dwOffset );
+
+    // 캐시 버퍼에 있다면 캐시에 씀
+    if( pstCacheBuffer != NULL )
+    {
+        kMemCpy( pstCacheBuffer->pbBuffer, pbBuffer, 512 );
+
+        // 쓰기를 수행했으므로 버퍼의 내용을 수정된 것으로 표시
+        pstCacheBuffer->bChanged = TRUE;  
+        return TRUE;
+    }
+    
+    // 캐시 버퍼에 없다면 캐시 버퍼를 할당 받아서 캐시 내용을 갱신
+    pstCacheBuffer = kAllocateCacheBufferWithFlush( CACHE_CLUSTERLINKTABLEAREA );
+    if( pstCacheBuffer == NULL )
+    {
+        return FALSE;
+    } 
+
+    // 캐시 버퍼에 쓰고, 태그 정보를 갱신
+    kMemCpy( pstCacheBuffer->pbBuffer, pbBuffer, 512 );
+    pstCacheBuffer->dwTag = dwOffset;
+    
+    // 쓰기를 수행했으므로 버퍼의 내용을 수정된 것으로 표시
+    pstCacheBuffer->bChanged = TRUE;  
+
+    return TRUE;
+}
+
+/**
  *  데이터 영역의 오프셋에서 한 클러스터를 읽음
  */
 static BOOL kReadCluster( DWORD dwOffset, BYTE* pbBuffer )
+{
+    // 캐시 여부에 따라 다른 읽기 함수 호출
+    if( gs_stFileSystemManager.bCacheEnable == FALSE )
+    {
+        kInternalReadClusterWithoutCache( dwOffset, pbBuffer );
+    }
+    else
+    {
+        kInternalReadClusterWithCache( dwOffset, pbBuffer );
+    }
+}
+
+/**
+ *  데이터 영역의 오프셋에서 한 클러스터를 읽음
+ *      내부적으로 사용하는 함수, 캐시 사용 안 함
+ */
+static BOOL kInternalReadClusterWithoutCache( DWORD dwOffset, BYTE* pbBuffer )
 {
     // 데이터 영역의 시작 어드레스를 더함
     return gs_pfReadHDDSector( TRUE, TRUE, ( dwOffset * FILESYSTEM_SECTORSPERCLUSTER ) + 
@@ -323,14 +496,110 @@ static BOOL kReadCluster( DWORD dwOffset, BYTE* pbBuffer )
 }
 
 /**
+ *  데이터 영역의 오프셋에서 한 클러스터를 읽음
+ *      내부적으로 사용하는 함수, 캐시 사용
+ */
+static BOOL kInternalReadClusterWithCache( DWORD dwOffset, BYTE* pbBuffer )
+{
+    CACHEBUFFER* pstCacheBuffer;
+    
+    // 캐시에 해당 데이터 클러스터가 있는지 확인
+    pstCacheBuffer = kFindCacheBuffer( CACHE_DATAAREA, dwOffset );
+
+    // 캐시 버퍼에 있다면 캐시의 내용을 복사
+    if( pstCacheBuffer != NULL )
+    {
+        kMemCpy( pbBuffer, pstCacheBuffer->pbBuffer, FILESYSTEM_CLUSTERSIZE );
+        return TRUE;
+    }
+    
+    // 캐시 버퍼에 없다면 하드 디스크에서 직접 읽음
+    if( kInternalReadClusterWithoutCache( dwOffset, pbBuffer ) == FALSE )
+    {
+        return FALSE;
+    }
+    
+    // 캐시 버퍼를 할당 받아서 캐시 내용을 갱신
+    pstCacheBuffer = kAllocateCacheBufferWithFlush( CACHE_DATAAREA );
+    if( pstCacheBuffer == NULL )
+    {
+        return FALSE;
+    }    
+
+    // 캐시 버퍼에 읽은 내용을 복사한 후, 태그 정보를 갱신
+    kMemCpy( pstCacheBuffer->pbBuffer, pbBuffer, FILESYSTEM_CLUSTERSIZE );
+    pstCacheBuffer->dwTag = dwOffset;
+    
+    // 읽기를 수행했으므로 버퍼의 내용을 수정되지 않은 것으로 표시
+    pstCacheBuffer->bChanged = FALSE;
+    return TRUE;    
+}
+
+/**
  *  데이터 영역의 오프셋에 한 클러스터를 씀
  */
 static BOOL kWriteCluster( DWORD dwOffset, BYTE* pbBuffer )
 {
+    // 캐시 여부에 따라 다른 쓰기 함수 호출
+    if( gs_stFileSystemManager.bCacheEnable == FALSE )
+    {
+        kInternalWriteClusterWithoutCache( dwOffset, pbBuffer );
+    }
+    else
+    {
+        kInternalWriteClusterWithCache( dwOffset, pbBuffer );
+    }    
+}
+
+/**
+ *  데이터 영역의 오프셋에 한 클러스터를 씀
+ *      내부적으로 사용하는 함수, 캐시 사용 안 함
+ */
+static BOOL kInternalWriteClusterWithoutCache( DWORD dwOffset, BYTE* pbBuffer )
+{
     // 데이터 영역의 시작 어드레스를 더함
-    return gs_pfWriteHDDSector( TRUE, TRUE, ( dwOffset * FILESYSTEM_SECTORSPERCLUSTER ) + 
+    return  gs_pfWriteHDDSector( TRUE, TRUE, ( dwOffset * FILESYSTEM_SECTORSPERCLUSTER ) + 
               gs_stFileSystemManager.dwDataAreaStartAddress, 
               FILESYSTEM_SECTORSPERCLUSTER, pbBuffer );
+}
+
+/**
+ *  데이터 영역의 오프셋에 한 클러스터를 씀
+ *      내부적으로 사용하는 함수, 캐시 사용
+ */
+static BOOL kInternalWriteClusterWithCache( DWORD dwOffset, BYTE* pbBuffer )
+{
+    CACHEBUFFER* pstCacheBuffer;
+    
+    // 캐시 버퍼에 해당 데이터 클러스터가 있는지 확인
+    pstCacheBuffer = kFindCacheBuffer( CACHE_DATAAREA, dwOffset );
+
+    // 캐시 버퍼에 있다면 캐시에 씀
+    if( pstCacheBuffer != NULL )
+    {
+        kMemCpy( pstCacheBuffer->pbBuffer, pbBuffer, FILESYSTEM_CLUSTERSIZE );
+
+        // 쓰기를 수행했으므로 버퍼의 내용을 수정된 것으로 표시
+        pstCacheBuffer->bChanged = TRUE;  
+
+        return TRUE;
+    }
+    
+    // 캐시 버퍼에 없다면 캐시를 할당 받아서 캐시 내용을 갱신
+    pstCacheBuffer = kAllocateCacheBufferWithFlush( CACHE_DATAAREA );
+    if( pstCacheBuffer == NULL )
+    {
+        return FALSE;
+    } 
+
+    // 캐시 버퍼에 쓰고, 태그 정보를 갱신
+    kMemCpy( pstCacheBuffer->pbBuffer, pbBuffer, FILESYSTEM_CLUSTERSIZE );
+    pstCacheBuffer->dwTag = dwOffset;
+    
+    // 쓰기를 수행했으므로 버퍼의 내용을 수정된 것으로 표시
+    pstCacheBuffer->bChanged = TRUE;  
+
+    return TRUE;
 }
 
 /**
@@ -479,8 +748,8 @@ static int kFindFreeDirectoryEntry( void )
         return -1;
     }
 
-    //  디렉터리를 읽음
-    if( kReadCluster( currentClusterIndex, gs_vbTempBuffer ) == FALSE )
+    // 루트 디렉터리를 읽음
+    if( kReadCluster( 0, gs_vbTempBuffer ) == FALSE )
     {
         return -1;
     }
@@ -499,36 +768,6 @@ static int kFindFreeDirectoryEntry( void )
 }
 
 /**
- *  해당 디렉토리의 엔트리 배열 리턴
- */
- DIRECTORYENTRY* kFindDirectory( DWORD currentCluster )
-{
-    DIRECTORYENTRY* pstEntry = NULL;
-    int i;
-
-    // 파일 시스템을 인식하지 못했으면 실패
-    if( gs_stFileSystemManager.bMounted == FALSE )
-    {
-        return NULL;
-    }
-
-    // 디렉터리를 읽음
-    if( kReadCluster( currentCluster, gs_vbTempBuffer ) == FALSE )
-    {
-        return NULL;
-    }
-    
-    // 루트 디렉터리 안에서 루프를 돌면서 빈 엔트리, 즉 시작 클러스터 번호가 0인
-    // 엔트리를 검색
-    pstEntry = ( DIRECTORYENTRY* ) gs_vbTempBuffer;
-    if(pstEntry == NULL)
-        return NULL;
-
-    return pstEntry;
-    
-}
-
-/**
  *  루트 디렉터리의 해당 인덱스에 디렉터리 엔트리를 설정
  */
 static BOOL kSetDirectoryEntryData( int iIndex, DIRECTORYENTRY* pstEntry )
@@ -542,8 +781,8 @@ static BOOL kSetDirectoryEntryData( int iIndex, DIRECTORYENTRY* pstEntry )
         return FALSE;
     }
 
-    //  디렉터리를 읽음
-    if( kReadCluster( currentClusterIndex, gs_vbTempBuffer ) == FALSE )
+    // 루트 디렉터리를 읽음
+    if( kReadCluster( 0, gs_vbTempBuffer ) == FALSE )
     {
         return FALSE;
     }    
@@ -553,7 +792,7 @@ static BOOL kSetDirectoryEntryData( int iIndex, DIRECTORYENTRY* pstEntry )
     kMemCpy( pstRootEntry + iIndex, pstEntry, sizeof( DIRECTORYENTRY ) );
 
     // 루트 디렉터리에 씀
-    if( kWriteCluster( currentClusterIndex, gs_vbTempBuffer ) == FALSE )
+    if( kWriteCluster( 0, gs_vbTempBuffer ) == FALSE )
     {
         return FALSE;
     }    
@@ -602,7 +841,7 @@ static int kFindDirectoryEntry( const char* pcFileName, DIRECTORYENTRY* pstEntry
     }
 
     // 루트 디렉터리를 읽음
-    if( kReadCluster( currentClusterIndex, gs_vbTempBuffer ) == FALSE )
+    if( kReadCluster( 0, gs_vbTempBuffer ) == FALSE )
     {
         return -1;
     }
@@ -677,7 +916,6 @@ static BOOL kCreateFile( const char* pcFileName, DIRECTORYENTRY* pstEntry,
         int* piDirectoryEntryIndex )
 {
     DWORD dwCluster;
-
     
     // 빈 클러스터를 찾아서 할당된 것으로 설정
     dwCluster = kFindFreeCluster();
@@ -700,7 +938,6 @@ static BOOL kCreateFile( const char* pcFileName, DIRECTORYENTRY* pstEntry,
     kMemCpy( pstEntry->vcFileName, pcFileName, kStrLen( pcFileName ) + 1 );
     pstEntry->dwStartClusterIndex = dwCluster;
     pstEntry->dwFileSize = 0;
-    pstEntry->flag = 0;
     
     // 디렉터리 엔트리를 등록
     if( kSetDirectoryEntryData( *piDirectoryEntryIndex, pstEntry ) == FALSE )
@@ -711,90 +948,6 @@ static BOOL kCreateFile( const char* pcFileName, DIRECTORYENTRY* pstEntry,
     }
     return TRUE;
 }
-
-/**
- *  디렉토리를 생성
- */
-static BOOL kCreateDirectory( const char* pcFileName, DIRECTORYENTRY* pstEntry, 
-        int* piDirectoryEntryIndex )
-{
-    DWORD dwCluster;
-    
-    // 빈 클러스터를 찾아서 할당된 것으로 설정
-    dwCluster = kFindFreeCluster();
-    if( ( dwCluster == FILESYSTEM_LASTCLUSTER ) ||
-        ( kSetClusterLinkData( dwCluster, FILESYSTEM_LASTCLUSTER ) == FALSE ) )
-    {
-        return FALSE;
-    }
-
-    // 빈 디렉터리 엔트리를 검색
-    *piDirectoryEntryIndex = kFindFreeDirectoryEntry();
-    if( *piDirectoryEntryIndex == -1 )
-    {
-        // 실패할 경우 할당 받은 클러스터를 반환해야 함
-        kSetClusterLinkData( dwCluster, FILESYSTEM_FREECLUSTER );
-        return FALSE;
-    }
-    
-    // 디렉터리 엔트리를 설정
-    kMemCpy( pstEntry->vcFileName, pcFileName, kStrLen( pcFileName ) + 1 );
-    pstEntry->dwStartClusterIndex = dwCluster;
-    pstEntry->dwFileSize = 0;
-    pstEntry->flag=1;
-    pstEntry->ParentDirectoryPath[0] = '/';
-    pstEntry->ParentDirectoryPath[1] = '\0';
-    pstEntry->ParentDirectoryCluserIndex = 0;
-   
-    
-    // 디렉터리 엔트리를 등록
-    if( kSetDirectoryEntryData( *piDirectoryEntryIndex, pstEntry ) == FALSE )
-    {
-        // 실패할 경우 할당 받은 클러스터를 반환해야 함
-        kSetClusterLinkData( dwCluster, FILESYSTEM_FREECLUSTER );
-        return FALSE;
-    }
-    
-    kSetDotInDirectory();
-
-    return TRUE;
-}
-
-/**
- *  디렉토리를 업데이트
- */
-BOOL kUpdateDirectory( int piDirectoryEntryIndex,const char* fileName,const char* parentPath, int parentIndex )
-{
-    DWORD dwCluster;
-    //DIRECTORYENTRY* psEntry;
-    
-    DIRECTORYENTRY stEntry;
-    int iDirectoryEntryOffset = piDirectoryEntryIndex;
-
-    // 디렉터리 엔트리를 설정
-    kMemCpy( stEntry.vcFileName, fileName, kStrLen(fileName)+1 );
-    stEntry.dwStartClusterIndex = -1;
-    stEntry.dwFileSize = 0;
-    stEntry.flag=1;
-    stEntry.ParentDirectoryCluserIndex = parentIndex;
-    kMemCpy(stEntry.ParentDirectoryPath,parentPath,kStrLen(parentPath)+1);
-    
-    
-    // 디렉터리 엔트리를 등록
-    if( kSetDirectoryEntryData( iDirectoryEntryOffset, &stEntry ) == FALSE )
-    {
-        
-        return FALSE;
-    }
-
-   
-
-  
-   
-    return TRUE;
-}
-
-
 
 /**
  *  파라미터로 넘어온 클러스터부터 파일의 끝까지 연결된 클러스터를 모두 반환
@@ -1520,35 +1673,10 @@ DIR* kOpenDirectory( const char* pcDirectoryName )
 {
     DIR* pstDirectory;
     DIRECTORYENTRY* pstDirectoryBuffer;
-
-    DIRECTORYENTRY stEntry;
-    int iDirectoryEntryOffset;
-    int iFileNameLength;
-    DWORD dwSecondCluster;
-    FILE* pstFile;
     
     // 동기화
     kLock( &( gs_stFileSystemManager.stMutex ) );
     
-    
-    //==========================================================================
-    // 파일이 먼저 존재하는가 확인하고, 없다면 옵션을 보고 파일을 생성
-    //==========================================================================
-
-    iDirectoryEntryOffset = kFindDirectoryEntry( pcDirectoryName, &stEntry );
-    if( iDirectoryEntryOffset == -1 && kMemCmp(pcDirectoryName,"/",2)!= 0)
-    {
-       
-        // 나머지 옵션들은 파일을 생성
-        if( kCreateDirectory( pcDirectoryName, &stEntry, &iDirectoryEntryOffset ) == FALSE )
-        {
-            // 동기화
-            kUnlock( &( gs_stFileSystemManager.stMutex ) );
-            return NULL;
-        }
-    }    
-    
-//------------------------------------------------------------------------------------
     // 루트 디렉터리 밖에 없으므로 디렉터리 이름은 무시하고 핸들만 할당받아서 반환
     pstDirectory = kAllocateFileDirectoryHandle();
     if( pstDirectory == NULL )
@@ -1691,4 +1819,64 @@ int kCloseDirectory( DIR* pstDirectory )
     kUnlock( &( gs_stFileSystemManager.stMutex ) );
 
     return 0;
+}
+
+
+/**
+ *  파일 시스템 캐시를 모두 하드 디스크에 씀
+ */
+BOOL kFlushFileSystemCache( void )
+{
+    CACHEBUFFER* pstCacheBuffer;
+    int iCacheCount;
+    int i;
+    
+    // 캐시가 비활성화 되었다면 함수를 수행할 필요가 없음
+    if( gs_stFileSystemManager.bCacheEnable == FALSE )
+    {
+        return TRUE;
+    }
+    
+    // 동기화
+    kLock( &( gs_stFileSystemManager.stMutex ) );
+    
+    // 클러스터 링크 테이블 영역의 캐시 정보를 얻어서 내용이 변한 캐시 버퍼를 모두
+    // 디스크에 씀
+    kGetCacheBufferAndCount( CACHE_CLUSTERLINKTABLEAREA, &pstCacheBuffer, 
+            &iCacheCount );
+    for( i = 0 ; i < iCacheCount ; i++ )
+    {
+        // 캐시의 내용이 변했다면 태그에 저장된 위치에 직접 씀
+        if( pstCacheBuffer[ i ].bChanged == TRUE )
+        {
+            if( kInternalWriteClusterLinkTableWithoutCache( 
+                pstCacheBuffer[ i ].dwTag, pstCacheBuffer[ i ].pbBuffer ) == FALSE )
+            {
+                return FALSE;
+            }
+            // 버퍼의 내용을 하드 디스크에 썼으므로, 변경되지 않은 것으로 설정
+            pstCacheBuffer[ i ].bChanged = FALSE;
+        }
+    }
+    
+    // 데이터 영역의 캐시 정보를 얻어서 내용이 변한 캐시 버퍼를 모두 디스크에 씀
+    kGetCacheBufferAndCount( CACHE_DATAAREA, &pstCacheBuffer, &iCacheCount );
+    for( i = 0 ; i < iCacheCount ; i++ )
+    {
+        // 캐시의 내용이 변했다면 태그에 저장된 위치에 직접 씀
+        if( pstCacheBuffer[ i ].bChanged == TRUE )
+        {
+            if( kInternalWriteClusterWithoutCache( pstCacheBuffer[ i ].dwTag, 
+                pstCacheBuffer[ i ].pbBuffer ) == FALSE )
+            {
+                return FALSE;
+            }
+            // 버퍼의 내용을 하드 디스크에 썼으므로, 변경되지 않은 것으로 설정
+            pstCacheBuffer[ i ].bChanged = FALSE;
+        }
+    }
+    
+    // 동기화
+    kUnlock( &( gs_stFileSystemManager.stMutex ) );
+    return TRUE;
 }

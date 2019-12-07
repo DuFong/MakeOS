@@ -12,6 +12,7 @@
 #include "Types.h"
 #include "Synchronization.h"
 #include "HardDisk.h"
+#include "CacheManager.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -130,18 +131,12 @@ typedef struct kMBRStruct
 // 디렉터리 엔트리 자료구조
 typedef struct kDirectoryEntryStruct
 {
-    //파일인지 디렉토리인지 구분
-    int flag;
     // 파일 이름
     char vcFileName[ FILESYSTEM_MAXFILENAMELENGTH ];
     // 파일의 실제 크기
     DWORD dwFileSize;
     // 파일이 시작하는 클러스터 인덱스
     DWORD dwStartClusterIndex;
-
-    //부모 디렉터리 표시
-    char ParentDirectoryPath[FILESYSTEM_MAXFILENAMELENGTH];
-    DWORD ParentDirectoryCluserIndex;
 } DIRECTORYENTRY;
 
 #pragma pack( pop )
@@ -211,6 +206,9 @@ typedef struct kFileSystemManagerStruct
     
     // 핸들 풀(Handle Pool)의 어드레스
     FILE* pstHandlePool;
+    
+    // 캐시를 사용하는지 여부
+    BOOL bCacheEnable;
 } FILESYSTEMMANAGER;
 
 
@@ -238,6 +236,23 @@ static BOOL kGetDirectoryEntryData( int iIndex, DIRECTORYENTRY* pstEntry );
 static int kFindDirectoryEntry( const char* pcFileName, DIRECTORYENTRY* pstEntry );
 void kGetFileSystemInformation( FILESYSTEMMANAGER* pstManager );
 
+// 캐시 관련 함수
+static BOOL kInternalReadClusterLinkTableWithoutCache( DWORD dwOffset, 
+        BYTE* pbBuffer );
+static BOOL kInternalReadClusterLinkTableWithCache( DWORD dwOffset, 
+        BYTE* pbBuffer );
+static BOOL kInternalWriteClusterLinkTableWithoutCache( DWORD dwOffset, 
+        BYTE* pbBuffer );
+static BOOL kInternalWriteClusterLinkTableWithCache( DWORD dwOffset, 
+        BYTE* pbBuffer );
+static BOOL kInternalReadClusterWithoutCache( DWORD dwOffset, BYTE* pbBuffer );
+static BOOL kInternalReadClusterWithCache( DWORD dwOffset, BYTE* pbBuffer );
+static BOOL kInternalWriteClusterWithoutCache( DWORD dwOffset, BYTE* pbBuffer );
+static BOOL kInternalWriteClusterWithCache( DWORD dwOffset, BYTE* pbBuffer );
+
+static CACHEBUFFER* kAllocateCacheBufferWithFlush( int iCacheTableIndex );
+BOOL kFlushFileSystemCache( void );
+
 //  고수준 함수(High Level Function)
 FILE* kOpenFile( const char* pcFileName, const char* pcMode );
 DWORD kReadFile( void* pvBuffer, DWORD dwSize, DWORD dwCount, FILE* pstFile );
@@ -252,18 +267,11 @@ int kCloseDirectory( DIR* pstDirectory );
 BOOL kWriteZero( FILE* pstFile, DWORD dwCount );
 BOOL kIsFileOpened( const DIRECTORYENTRY* pstEntry );
 
-
 static void* kAllocateFileDirectoryHandle( void );
 static void kFreeFileDirectoryHandle( FILE* pstFile );
 static BOOL kCreateFile( const char* pcFileName, DIRECTORYENTRY* pstEntry, 
         int* piDirectoryEntryIndex );
 static BOOL kFreeClusterUntilEnd( DWORD dwClusterIndex );
 static BOOL kUpdateDirectoryEntry( FILEHANDLE* pstFileHandle );
-static BOOL kCreateDirectory( const char* pcFileName, DIRECTORYENTRY* pstEntry, 
-        int* piDirectoryEntryIndex );               //
- DIRECTORYENTRY* kFindDirectory( DWORD currentCluster );      //
- void kSetDotInDirectory();
- void kSetClusterIndex(DWORD currentDirectoryClusterIndex);
- BOOL kUpdateDirectory( int piDirectoryEntryIndex,const char* fileName,const char* parentPath, int parentIndex );
 
 #endif /*__FILESYSTEM_H__*/

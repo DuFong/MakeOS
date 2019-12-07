@@ -46,12 +46,15 @@ SHELLCOMMANDENTRY gs_vstCommandTable[] = {
     { "filesysteminfo", "Show File System Information", kShowFileSystemInformation },
     { "createfile", "Create File, ex)createfile a.txt", kCreateFileInRootDirectory },
     { "deletefile", "Delete File, ex)deletefile a.txt", kDeleteFileInRootDirectory },
-    { "dir", "Show Directory", kShowRootDirectory },
+    { "dir", "Show Directory", kShowDirectory },
     { "writefile", "Write Data To File, ex) writefile a.txt", kWriteDataToFile },
     { "readfile", "Read Data From File, ex) readfile a.txt", kReadDataFromFile },
     { "testfileio", "Test File I/O Function", kTestFileIO },
     { "testperformance", "Test File Read/WritePerformance", kTestPerformance },
     { "flush", "Flush File System Cache", kFlushCache },
+    { "mkdir", "Make Directory, ex) mkdir folder", kMakeDirectory},
+    { "cd", "Move Directory, ex) cd folder", kMoveDirectory},
+    { "rmdir", "Remove emptyed Directory ex) rmdir folder", kRemoveDirectory},
 };
 
 char historyCommand[10][100];
@@ -61,6 +64,9 @@ int cidx = 0;       //up, down키 눌러서 가리키는 위치
 int ccnt = 0;       //up키는 최대 10번 누를 수 있도록 check
 
 scrollDownPointer = 0;
+
+char path[100] = "/";
+DWORD currentDirectoryClusterIndex = 0;
 
 // 셸의 메인 루프
 void kStartConsoleShell(){
@@ -2470,6 +2476,202 @@ static void kFlushCache( const char* pcParameterBuffer )
     kPrintf( "Total Time = %d ms\n", kGetTickCount() - qwTickCount );
 }
 
+/**
+ *  디렉토리 생성
+ */
+static void kMakeDirectory( const char* pcParamegerBuffer ){
+    PARAMETERLIST stList;
+    char vcFileName[ 50 ];
+    int iLength;
+    DWORD dwCluster;
+    int i;
+    FILE* pstFile;
+    
+    // 파라미터 리스트를 초기화하여 파일 이름을 추출
+    kInitializeParameter( &stList, pcParamegerBuffer );
+    iLength = kGetNextParameter( &stList, vcFileName );
+    vcFileName[ iLength ] = '\0';
+    if( ( iLength > ( FILESYSTEM_MAXFILENAMELENGTH - 1 ) ) || ( iLength == 0 ) ){
+        kPrintf( "Too Long or Too Short File Name\n" );
+        return ;
+    }
+
+    pstFile = opendir( vcFileName);
+    if( pstFile == NULL ){
+        kPrintf( "Directory Create Fail\n" );
+        return;
+    }
+    fclose( pstFile );
+    kPrintf( "Directory Create Success\n" );
+}
+
+/**
+ * 디렉토리 이동
+ */
+static void kMoveDirectory( const char* pcParamegerBuffer){
+    PARAMETERLIST stList;
+    char vcFileName[ 50 ];
+    int iLength;
+    DWORD dwCluster;
+    int i;
+    FILE* pstFile;
+    
+    // 파라미터 리스트를 초기화하여 파일 이름을 추출
+    kInitializeParameter( &stList, pcParamegerBuffer );
+    iLength = kGetNextParameter( &stList, vcFileName );
+    vcFileName[ iLength ] = '\0';
+    if( ( iLength > ( FILESYSTEM_MAXFILENAMELENGTH - 1 ) ) || ( iLength == 0 ) )
+    {
+        kPrintf( "Too Long or Too Short File Name\n" );
+        return ;
+    }
+
+    DIR* pstDirectory;
+    
+    FILESYSTEMMANAGER stManager;
+    DIRECTORYENTRY* directoryInfo;
+    char temp_path[100] = "\0";
+    DWORD temp_index = 0;
+    
+    // 파일 시스템 정보를 얻음
+    kGetFileSystemInformation( &stManager );
+    
+    directoryInfo = kFindDirectory(currentDirectoryClusterIndex);
+
+    if(kMemCmp(vcFileName, ".", 2) == 0){
+        currentDirectoryClusterIndex = directoryInfo[0].ParentDirectoryCluserIndex;
+        kSetClusterIndex(currentDirectoryClusterIndex);
+        kMemCpy(path,directoryInfo[0].ParentDirectoryPath,kStrLen(directoryInfo[0].ParentDirectoryPath)+1);
+     }
+    else if(kMemCmp(vcFileName, "..", 3) == 0){
+       
+        currentDirectoryClusterIndex = directoryInfo[1].ParentDirectoryCluserIndex;
+        kSetClusterIndex(currentDirectoryClusterIndex);
+        
+        kMemCpy(path,directoryInfo[1].ParentDirectoryPath,kStrLen(directoryInfo[1].ParentDirectoryPath)+1);
+     }   
+    else{
+        for( int j = 0 ; j < FILESYSTEM_MAXDIRECTORYENTRYCOUNT ; j++ )
+        {
+            if( directoryInfo[ j ].dwStartClusterIndex != 0 &&
+                kMemCmp(directoryInfo[ j ].vcFileName,vcFileName,kStrLen(vcFileName))==0 && 
+                    directoryInfo[j].flag == 1)
+            {
+                kMemCpy(temp_path,path,kStrLen(path)+1);   
+                temp_index = currentDirectoryClusterIndex;
+                
+                if(kMemCmp(path,"/",2)==0)
+                    kMemCpy(path + kStrLen(path),vcFileName,kStrLen(vcFileName)+1);
+                else{
+                    kMemCpy(path + kStrLen(path), "/", 1);
+                    kMemCpy(path + kStrLen(path), vcFileName, kStrLen(vcFileName) + 1);
+                }
+
+                currentDirectoryClusterIndex = directoryInfo[ j ].dwStartClusterIndex;
+                kSetClusterIndex(currentDirectoryClusterIndex);
+                directoryInfo = NULL;
+                directoryInfo = kFindDirectory(currentDirectoryClusterIndex);
+                if( directoryInfo[ 0 ].dwStartClusterIndex != -1 )
+                {
+                kSetDotInDirectory();
+                    kUpdateDirectory(0,".",path,currentDirectoryClusterIndex);
+                
+                }
+
+                directoryInfo[1].ParentDirectoryCluserIndex = temp_index;
+                kMemCpy(directoryInfo[1].ParentDirectoryPath,temp_path,kStrLen(temp_path) + 1);
+                kUpdateDirectory( 1, "..", temp_path, temp_index );
+            
+                break;          
+            }     
+        }
+    }
+}
+
+/**
+ *  디렉터리 삭제
+ */
+static void kRemoveDirectory( const char* pcParameterBuffer ){
+    PARAMETERLIST stList;
+    char vcFileName[ 50 ];
+    int iLength;
+    
+    // 파라미터 리스트를 초기화하여 파일 이름을 추출
+    kInitializeParameter( &stList, pcParameterBuffer );
+    iLength = kGetNextParameter( &stList, vcFileName );
+    vcFileName[ iLength ] = '\0';
+    if( ( iLength > ( FILESYSTEM_MAXFILENAMELENGTH - 1 ) ) || ( iLength == 0 ) ){
+        kPrintf( "Too Long or Too Short File Name\n" );
+        return ;
+    }
+
+    if( remove( vcFileName ) != 0 ){
+        kPrintf( "File Not Found or File Opened\n" );
+        return ;
+    }
+    
+    kPrintf( "File Delete Success\n" );
+}
+
+/**
+ *  디렉터리의 파일 목록을 표시
+ */
+static void kShowDirectory( const char* pcParameterBuffer )
+{
+    DIR* pstDirectory;
+    int i, iCount, iTotalCount;
+    struct dirent* pstEntry;
+    char vcBuffer[ 400 ];
+    char vcTempValue[ 50 ];
+    DWORD dwTotalByte;
+    DWORD dwUsedClusterCount;
+    FILESYSTEMMANAGER stManager;
+    DIRECTORYENTRY* directoryInfo;
+    
+    // 파일 시스템 정보를 얻음
+    kGetFileSystemInformation( &stManager );
+ 
+    iCount = 0;
+    directoryInfo = kFindDirectory(currentDirectoryClusterIndex);
+     
+    for( i = 0 ; i < FILESYSTEM_MAXDIRECTORYENTRYCOUNT ; i++ )
+    {
+        if( directoryInfo[ i ].dwStartClusterIndex != 0 )
+        {    
+            pstEntry = &directoryInfo[i];
+            // 전부 공백으로 초기화 한 후 각 위치에 값을 대입
+            kMemSet( vcBuffer, ' ', sizeof( vcBuffer ) - 1 );
+            vcBuffer[ sizeof( vcBuffer ) - 1 ] = '\0';
+            
+            if(pstEntry->flag == 0){
+                // 파일 이름 삽입
+                kMemCpy( vcBuffer, pstEntry->d_name, 
+                        kStrLen( pstEntry->d_name ) );
+
+                // 파일 길이 삽입
+                kSPrintf( vcTempValue, "%d Byte", pstEntry->dwFileSize );
+                kMemCpy( vcBuffer + 30, vcTempValue, kStrLen( vcTempValue )  );
+
+                // 파일의 시작 클러스터 삽입
+                kSPrintf( vcTempValue, "0x%X Cluster", pstEntry->dwStartClusterIndex );
+                kMemCpy( vcBuffer + 55, vcTempValue, kStrLen( vcTempValue ) + 1 );
+
+                kPrintf( "    %s\n", vcBuffer );
+            }
+            else if(pstEntry->flag == 1)
+            {
+                // 파일 이름 삽입
+                kMemCpy( vcBuffer, pstEntry->d_name, kStrLen( pstEntry->d_name ) );
+
+                // 파일 길이 삽입
+                kSPrintf( vcTempValue, "Directory", 10 );
+                kMemCpy( vcBuffer + 30, vcTempValue, kStrLen( vcTempValue ) +1);
+                //vcBuffer[kStrLen(vcBuffer) + 1] = '\0';
+                kPrintf( "    %s\n", vcBuffer );
+            }     
+        }
+    }   
+}
 
 
 
