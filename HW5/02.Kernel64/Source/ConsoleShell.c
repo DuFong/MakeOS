@@ -79,6 +79,14 @@ void kStartConsoleShell(){
 
     // 화면보호기 프로세스 생성
     kCreateScreenSaverTask();
+    
+    //this code is for testing kScanf
+    ///////////////////////////////////////
+    // int tmpbufferIdx = 0;
+    // char tmpbuffer[300];
+    // tmpbufferIdx = kScanf(tmpbuffer);
+    // kPrintf(tmpbuffer);
+    ///////////////////////////////////////
 
     ///////////////////////////////////////////////////////////////
     int checkID = 0;
