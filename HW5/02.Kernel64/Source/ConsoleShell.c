@@ -78,6 +78,85 @@ void kStartConsoleShell(){
 
     // 화면보호기 프로세스 생성
     kCreateScreenSaverTask();
+
+    ///////////////////////////////////////////////////////////////
+    int checkID = 0;
+    char inputID[10] = {
+        '\0',
+    };
+    int inputIDindex = 0;
+    char tmpID[5] = {'a', 'b', 'c', '\0'};
+    char tmpPW[8] = {'1', '2', '3', '4', '\0'};
+    kPrintf("please enter your id : ");
+
+    while (1)
+    {
+        bKey = kGetCh();
+
+        if (bKey == KEY_BACKSPACE)
+        {
+            if (iCommandBufferIndex > 0)
+            {
+                kGetCursor(&iCursorX, &iCursorY);
+                kPrintStringXY(iCursorX - 1, iCursorY, " ");
+                kSetCursor(iCursorX - 1, iCursorY);
+                iCommandBufferIndex--;
+            }
+        }
+        else if (bKey == KEY_ENTER)
+        {
+            kPrintf("\n");
+
+            if (iCommandBufferIndex > 0)
+            {
+                vcCommandBuffer[iCommandBufferIndex] = '\0';
+                if (checkID == 0)
+                { //when id checking needed
+                    kMemCpy(inputID, vcCommandBuffer, iCommandBufferIndex);
+                    inputIDindex = iCommandBufferIndex;
+                    checkID = 1;
+                    kPrintf("enter your password : ");
+                }
+                else if (checkID == 1)
+                {
+                    if ((kMemCmp(tmpID, inputID, inputIDindex) == 0) && (kMemCmp(tmpPW, vcCommandBuffer, iCommandBufferIndex) == 0))
+                    {
+                        kPrintf("Login success!\n");
+                        kMemSet(vcCommandBuffer, '\0', CONSOLESHELL_MAXCOMMANDBUFFERCOUNT);
+                        iCommandBufferIndex = 0;
+                        break;
+                    }
+                    else
+                    {
+                        kPrintf("wrong id or password. try again\n");
+                        kPrintf("please enter your id : ");
+                        checkID = 0;
+                        kMemSet(vcCommandBuffer, '\0', CONSOLESHELL_MAXCOMMANDBUFFERCOUNT);
+                        iCommandBufferIndex = 0;
+                        continue;
+                    }
+                }
+            }
+
+            // 프롬프트 출력 및 커맨드 버퍼 초기화
+            kMemSet(vcCommandBuffer, '\0', CONSOLESHELL_MAXCOMMANDBUFFERCOUNT);
+            iCommandBufferIndex = 0;
+        }
+        else if ((bKey == KEY_LSHIFT) || (bKey == KEY_RSHIFT) || (bKey == KEY_CAPSLOCK) || (bKey == KEY_NUMLOCK) || (bKey == KEY_SCROLLLOCK))
+        {
+            ;
+        }
+        else
+        {
+            // 버퍼에 공간이 남아 있을때만 가능
+            if (iCommandBufferIndex < CONSOLESHELL_MAXCOMMANDBUFFERCOUNT)
+            {
+                vcCommandBuffer[iCommandBufferIndex++] = bKey;
+                kPrintf("%c", bKey);
+            }
+        }
+    }
+    ///////////////////////////////////////////////////////////////
     kPrintf(CONSOLESHELL_PROMPTMESSAGE);
 
     while(1){
