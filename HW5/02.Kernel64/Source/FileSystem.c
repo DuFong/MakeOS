@@ -1880,3 +1880,45 @@ BOOL kFlushFileSystemCache( void )
     kUnlock( &( gs_stFileSystemManager.stMutex ) );
     return TRUE;
 }
+
+
+// Login Function
+
+static BOOL kGetLoginEntryData( char * userName, char * password )
+{
+    LOGINENTRY* loginEntry;
+    int idLength;
+    int passLength;
+    
+    // 파일 시스템을 인식하지 못했거나 인덱스가 올바르지 않으면 실패
+    if( ( gs_stFileSystemManager.bMounted == FALSE ) ||
+        ( iIndex < 0 ) || ( iIndex >= FILESYSTEM_MAXDIRECTORYENTRYCOUNT ) )
+    {
+        return FALSE;
+    }
+
+    // 루트 디렉터리를 읽음
+    if( kReadCluster( LOGINCLUSTERNUM, gs_vbTempBuffer ) == FALSE )
+    {
+        return FALSE;
+    }    
+    
+    // 루트 디렉터리에 있는 해당 데이터를 갱신
+    loginEntry = ( LOGINENTRY* ) gs_vbTempBuffer;
+
+    nameLength = kStrLen( userName );
+    passLength = kStrLen( password );
+
+    for( i = 0 ; i < FILESYSTEM_MAXLOGINENTRYCOUNT ; i++ )
+    {
+        if( kMemCmp( loginEntry[ i ].userName, userName, nameLength ) == 0 )
+        {
+            if( kMemCmp( loginEntry[ i ].password, password, passLength ) == 0 ){
+                // correct !!
+                return TRUE
+            }
+        }
+    }
+    
+    return FALSE;
+}

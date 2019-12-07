@@ -30,6 +30,8 @@
 // 루트 디렉터리에 있는 최대 디렉터리 엔트리의 수
 #define FILESYSTEM_MAXDIRECTORYENTRYCOUNT   ( ( FILESYSTEM_SECTORSPERCLUSTER * 512 ) / \
         sizeof( DIRECTORYENTRY ) )
+#define FILESYSTEM_MAXLOGINENTRYCOUNT   ( ( FILESYSTEM_SECTORSPERCLUSTER * 512 ) / \
+        sizeof( LOGINENTRY ) )
 // 클러스터의 크기(바이트 수)
 #define FILESYSTEM_CLUSTERSIZE              ( FILESYSTEM_SECTORSPERCLUSTER * 512 )
 
@@ -38,6 +40,8 @@
 
 // 파일 이름의 최대 길이
 #define FILESYSTEM_MAXFILENAMELENGTH        24
+#define FILESYSTEM_MAXPASSWORDLENGTH        14
+#define FILESYSTEM_MAXUSERNAMELENGTH        14
 
 // 핸들의 타입을 정의
 #define FILESYSTEM_TYPE_FREE                0
@@ -48,6 +52,9 @@
 #define FILESYSTEM_SEEK_SET                 0
 #define FILESYSTEM_SEEK_CUR                 1
 #define FILESYSTEM_SEEK_END                 2
+
+#define ROOTDIRECTORY_CLUSTER_NUM             0
+#define LOGIN_CLUSTER_NUM                     1
 
 // 하드 디스크 제어에 관련된 함수 포인터 타입 정의
 typedef BOOL (* fReadHDDInformation ) ( BOOL bPrimary, BOOL bMaster, 
@@ -138,6 +145,14 @@ typedef struct kDirectoryEntryStruct
     // 파일이 시작하는 클러스터 인덱스
     DWORD dwStartClusterIndex;
 } DIRECTORYENTRY;
+
+// Login Entry Structure
+typedef struct kLoginEntryStruct
+{
+    char userName[ FILESYSTEM_MAXUSERNAMELENGTH ];
+    char password[ FILESYSTEM_MAXPASSWORDLENGTH ];
+    DWORD dwStartClusterIndex;
+} LOGINENTRY;
 
 #pragma pack( pop )
 
