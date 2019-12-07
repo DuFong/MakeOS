@@ -55,6 +55,7 @@ SHELLCOMMANDENTRY gs_vstCommandTable[] = {
     { "mkdir", "Make Directory, ex) mkdir folder", kMakeDirectory},
     { "cd", "Move Directory, ex) cd folder", kMoveDirectory},
     { "rmdir", "Remove emptyed Directory ex) rmdir folder", kRemoveDirectory},
+    { "createaccount", "Create New Account", kCreateAccount},
 };
 
 char historyCommand[10][100];
@@ -2640,7 +2641,7 @@ static void kMoveDirectory( const char* pcParamegerBuffer){
     else{
         for( int j = 0 ; j < FILESYSTEM_MAXDIRECTORYENTRYCOUNT ; j++ )
         {
-            if( directoryInfo[ j ].dwStartClusterIndex != 0 &&
+            if( directoryInfo[ j ].dwStartClusterIndex != 0 && kStrLen(directoryInfo[j].vcFileName) == kStrLen(vcFileName) && 
                 kMemCmp(directoryInfo[ j ].vcFileName,vcFileName,kStrLen(vcFileName))==0 && 
                     directoryInfo[j].flag == 1)
             {
@@ -2758,6 +2759,18 @@ static void kShowDirectory( const char* pcParameterBuffer )
             }     
         }
     }   
+}
+
+/**
+ * 계정 생성
+ */
+static void kCreateAccount(const char* pcParameterBuffer){
+    // char vcID[FILESYSTEM_MAXUSERNAMELENGTH];
+    // char vcPassword[FILESYSTEM_MAXPASSWORDLENGTH];
+
+    // kPrintf("Input your ID: ");
+    // kScanSetBuffer(vcID);
+    
 }
 
 
