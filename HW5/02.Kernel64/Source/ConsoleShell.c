@@ -209,7 +209,8 @@ void kStartConsoleShell(){
                 }
                 else if (checkID == 1)
                 {
-                    if (kCheckLoginState( inputID, vcCommandBuffer ))
+                    if ((kMemCmp(tmpID, inputID, inputIDindex) == 0) && (kMemCmp(tmpPW, vcCommandBuffer, iCommandBufferIndex) == 0))
+                    //if (kCheckLoginState( inputID, vcCommandBuffer ))
                     {
                         kPrintf("Login success!\n");
                         kMemSet(vcCommandBuffer, '\0', CONSOLESHELL_MAXCOMMANDBUFFERCOUNT);
@@ -2861,12 +2862,21 @@ static void kShowDirectory( const char* pcParameterBuffer )
  * 계정 생성
  */
 static void kCreateAccount(const char* pcParameterBuffer){
-    // char vcID[FILESYSTEM_MAXUSERNAMELENGTH];
-    // char vcPassword[FILESYSTEM_MAXPASSWORDLENGTH];
+    char vcID[FILESYSTEM_MAXUSERNAMELENGTH];
+    char vcPassword[FILESYSTEM_MAXPASSWORDLENGTH];
+    char vcPasswordConfilm[FILESYSTEM_MAXPASSWORDLENGTH];
 
-    // kPrintf("Input your ID: ");
-    // kScanSetBuffer(vcID);
+    kPrintf("Enter your ID: ");
+    kScanf(vcID);
+    kPrintf("Enter your password: ");
+    kScanf(vcPassword);
+    kPrintf("Enter your password again: ");
+    kScanf(vcPasswordConfilm);
     
+    // 비밀번호 확인 성공
+    if(kStrLen(vcPassword) == kStrLen(vcPasswordConfilm) && kMemCmp(vcPassword, vcPasswordConfilm, kStrLen(vcPassword)) == 0){
+        //kWriteLoginEntryData(vcID, vcPassword);
+    }
 }
 
 
