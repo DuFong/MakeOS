@@ -223,7 +223,9 @@ void kStartConsoleShell(){
                     {
                         //print new prompt
                         kPrintf( "\n" );
-                        kPrintf( "%s", CONSOLESHELL_PROMPTMESSAGE );
+                        kPrintf("%s", CONSOLESHELL_PROMPTMESSAGE);
+                        kPrintf(path);
+                        kPrintf(">");  
                         kPrintf( "%s", vcCommandBuffer );
                     }
                 }
@@ -265,6 +267,8 @@ void kStartConsoleShell(){
                 // 프롬프트와 history배열의 cidx번째 명령어 출력
                 kSetCursor(0, iCursorY);
                 kPrintf("%s", CONSOLESHELL_PROMPTMESSAGE);
+                kPrintf(path);
+                kPrintf(">");  
                 kPrintf( "%s", historyCommand[cidx]);
 
                 // iCommandBufferIndex와 vcCommandBuffer 설정
@@ -289,6 +293,9 @@ void kStartConsoleShell(){
                 // 프롬프트 출력
                 kSetCursor(0, iCursorY);
                 kPrintf("%s", CONSOLESHELL_PROMPTMESSAGE);
+                kPrintf(path);
+                kPrintf(">");  
+                
 
                 // history 배열 꽉차서 다른 값 나올 수 있음 => ccnt==0 이면 idx==cidx
                 if(ccnt == 0){
