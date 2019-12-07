@@ -239,7 +239,6 @@ BOOL kFormat( void )
             return FALSE;
         }
     }
-
     
     kSetDotInDirectory();
 

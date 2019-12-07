@@ -7,7 +7,7 @@
 #define MIN(x, y)       (((x) < (y)) ? (x) : (y))
 #define MAX(x, y)       (((x) > (y)) ? (x) : (y))
 
-int kScanf(char* scanBuffer);
+int kScanf(char* scanBuffer, BOOL bPrintKey);
 void kMemSet(void* pvDestination, BYTE bData, int iSize);
 int kMemCpy(void* pvDestination, const void* pvSource, int iSize);
 int krMemCpy(void* pvDestination, const void* pvSource, int iSize);
