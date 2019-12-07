@@ -33,6 +33,7 @@ typedef struct kParameterListStruct{
 
 #pragma pack(pop)
 
+void kLoginBeforeConsoleShell();
 void kStartConsoleShell();
 void kExecuteCommand(const char* pcCommandBuffer);
 void kInitializeParameter(PARAMETERLIST* pstList, const char* pcParameter);

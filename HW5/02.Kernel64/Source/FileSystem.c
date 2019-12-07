@@ -2070,7 +2070,7 @@ BOOL kFlushFileSystemCache( void )
 
 // Login Function
 
-static BOOL kCheckLoginState( char * userName, char * password )
+BOOL kCheckLoginState( char * userName, char * password )
 {
     LOGINENTRY* loginEntry;
     int idLength;

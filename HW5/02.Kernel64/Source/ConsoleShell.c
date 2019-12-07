@@ -69,6 +69,86 @@ scrollDownPointer = 0;
 char path[100] = "/";
 DWORD currentDirectoryClusterIndex = 0;
 
+void kLoginBeforeConsoleShell(){
+
+    char vcCommandBuffer[CONSOLESHELL_MAXCOMMANDBUFFERCOUNT];
+    int iCommandBufferIndex = 0;
+    BYTE bKey = 0;    
+    int iCursorX, iCursorY;
+
+    int checkID = 0;
+    char inputID[10] = {
+        '\0',
+    };
+    int inputIDindex = 0;
+    char tmpID[5] = {'a', 'b', 'c', '\0'};
+    char tmpPW[8] = {'1', '2', '3', '4', '\0'};
+    kPrintf("please enter your id : ");
+
+    while (1)
+    {
+        bKey = kGetCh();
+
+        if (bKey == KEY_BACKSPACE)
+        {
+            if (iCommandBufferIndex > 0)
+            {
+                kGetCursor(&iCursorX, &iCursorY);
+                kPrintStringXY(iCursorX - 1, iCursorY, " ");
+                kSetCursor(iCursorX - 1, iCursorY);
+                iCommandBufferIndex--;
+            }
+        }
+        else if (bKey == KEY_ENTER)
+        {
+            kPrintf("\n");
+            if (iCommandBufferIndex > 0)
+            {
+                vcCommandBuffer[iCommandBufferIndex] = '\0';
+                if (checkID == 0)
+                { //when id checking needed
+                    kMemCpy(inputID, vcCommandBuffer, iCommandBufferIndex);
+                    inputIDindex = iCommandBufferIndex;
+                    checkID = 1;
+                    kMemSet(vcCommandBuffer, '\0', CONSOLESHELL_MAXCOMMANDBUFFERCOUNT);
+                        iCommandBufferIndex = 0;
+                    kPrintf("enter your password : ");
+                }
+                else if (checkID == 1)
+                {
+                    if ((kMemCmp(tmpID, inputID, inputIDindex) == 0) && (kMemCmp(tmpPW, vcCommandBuffer, iCommandBufferIndex)==0))
+                    //if (kCheckLoginState( inputID, vcCommandBuffer ))
+                    {
+                        kPrintf("Login success!\n");                       
+                        return;
+                    }
+                    else
+                    {
+                        kPrintf("wrong id or password. try again\n");
+                        kPrintf("please enter your id : ");
+                        checkID = 0;
+                        kMemSet(vcCommandBuffer, '\0', CONSOLESHELL_MAXCOMMANDBUFFERCOUNT);
+                        iCommandBufferIndex = 0;
+                        continue;
+                    }
+                }
+            }
+        }
+        else if ((bKey == KEY_LSHIFT) || (bKey == KEY_RSHIFT) || (bKey == KEY_CAPSLOCK) || (bKey == KEY_NUMLOCK) || (bKey == KEY_SCROLLLOCK))
+        {
+            ;
+        }
+        else
+        {            
+            if (iCommandBufferIndex < CONSOLESHELL_MAXCOMMANDBUFFERCOUNT)
+            {
+                vcCommandBuffer[iCommandBufferIndex++] = bKey;
+                kPrintf("%c", bKey);
+            }
+        }
+    }
+}
+
 // 셸의 메인 루프
 void kStartConsoleShell(){
     char vcCommandBuffer[CONSOLESHELL_MAXCOMMANDBUFFERCOUNT];
@@ -80,6 +160,7 @@ void kStartConsoleShell(){
     // 화면보호기 프로세스 생성
     kCreateScreenSaverTask();
     
+    kLoginBeforeConsoleShell();
     //this code is for testing kScanf
     ///////////////////////////////////////
     // int tmpbufferIdx = 0;
@@ -89,7 +170,7 @@ void kStartConsoleShell(){
     ///////////////////////////////////////
 
     ///////////////////////////////////////////////////////////////
-    int checkID = 0;
+    /*int checkID = 0;
     char inputID[10] = {
         '\0',
     };
@@ -164,7 +245,7 @@ void kStartConsoleShell(){
                 kPrintf("%c", bKey);
             }
         }
-    }
+    }*/
     ///////////////////////////////////////////////////////////////
     
     // 프롬프트 출력
