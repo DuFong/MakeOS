@@ -123,7 +123,7 @@ void kLoginBeforeConsoleShell(){
                     //if (kCheckLoginState( inputID, vcCommandBuffer ))
                     {
                         kPrintf("Login success!\n"); 
-                        kMemCpy(userID, inputID, inputIDindex);
+                        kMemCpy(userName, inputID, inputIDindex);
                         return;
                     }
                     else
