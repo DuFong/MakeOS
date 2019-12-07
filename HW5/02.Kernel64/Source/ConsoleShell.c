@@ -158,7 +158,13 @@ void kStartConsoleShell(){
         }
     }
     ///////////////////////////////////////////////////////////////
+    
+    // 프롬프트 출력
     kPrintf(CONSOLESHELL_PROMPTMESSAGE);
+    kPrintf(path);
+    kPrintf(">");
+
+    kSetClusterIndex(currentDirectoryClusterIndex);
 
     while(1){
         bbKey = bKey;
@@ -193,6 +199,8 @@ void kStartConsoleShell(){
 
             // 프롬프트 출력 및 커맨드 버퍼 초기화
             kPrintf("%s", CONSOLESHELL_PROMPTMESSAGE);
+            kPrintf(path);
+            kPrintf(">");  
             kMemSet(vcCommandBuffer, '\0', CONSOLESHELL_MAXCOMMANDBUFFERCOUNT);
             iCommandBufferIndex = 0;
         }
