@@ -2871,11 +2871,11 @@ static void kCreateAccount(const char* pcParameterBuffer){
     char vcPasswordConfilm[FILESYSTEM_MAXPASSWORDLENGTH];
 
     kPrintf("Enter your ID: ");
-    kScanf(vcID);
+    kScanf(vcID, TRUE);
     kPrintf("Enter your password: ");
-    kScanf(vcPassword);
+    kScanf(vcPassword, FALSE);
     kPrintf("Enter your password again: ");
-    kScanf(vcPasswordConfilm);
+    kScanf(vcPasswordConfilm, FALSE);
     
     // 비밀번호 확인 성공
     if(kStrLen(vcPassword) == kStrLen(vcPasswordConfilm) && kMemCmp(vcPassword, vcPasswordConfilm, kStrLen(vcPassword)) == 0){
