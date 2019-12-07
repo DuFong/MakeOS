@@ -293,5 +293,6 @@ static BOOL kCreateDirectory( const char* pcFileName, DIRECTORYENTRY* pstEntry,
  void kSetClusterIndex(DWORD currentDirectoryClusterIndex);
  BOOL kUpdateDirectory( int piDirectoryEntryIndex,const char* fileName,const char* parentPath, int parentIndex );
  BOOL kCheckLoginState( char * userName, char * password );
+BOOL kChangePassword(char* userName, char* inputpasswd);
 
 #endif /*__FILESYSTEM_H__*/
