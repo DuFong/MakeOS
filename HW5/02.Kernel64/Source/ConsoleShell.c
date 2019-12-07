@@ -2875,7 +2875,9 @@ static void kCreateAccount(const char* pcParameterBuffer){
     
     // 비밀번호 확인 성공
     if(kStrLen(vcPassword) == kStrLen(vcPasswordConfilm) && kMemCmp(vcPassword, vcPasswordConfilm, kStrLen(vcPassword)) == 0){
-        //kWriteLoginEntryData(vcID, vcPassword);
+        if(!kWriteLoginEntryData(vcID, vcPassword)){
+            kPrintf("Sorry, failed to create a new account");
+        }
     }
 }
 
