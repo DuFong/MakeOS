@@ -4,7 +4,7 @@
 #include "Types.h"
 
 #define CONSOLESHELL_MAXCOMMANDBUFFERCOUNT  300
-#define CONSOLESHELL_PROMPTMESSAGE          "MINT64>"
+#define CONSOLESHELL_PROMPTMESSAGE          "MINT64:"
 
 // 문자열 포인터를 파라미터로 받는 함수 포인터 타입 정의
 typedef void(*CommandFunction) (const char* pcParameter);
@@ -85,6 +85,7 @@ static void kMakeDirectory(const char* pcParamegerBuffer);
 static void kMoveDirectory(const char* pcParamegerBuffer);
 static void kRemoveDirectory(const char* pcParameterBuffer);
 static void kShowDirectory(const char* pcParameterBuffer);
+static void kCreateAccount(const char* pcParameterBuffer);
 
 void kCallCls();
 void kCallTaskList();

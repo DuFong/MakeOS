@@ -55,6 +55,7 @@ SHELLCOMMANDENTRY gs_vstCommandTable[] = {
     { "mkdir", "Make Directory, ex) mkdir folder", kMakeDirectory},
     { "cd", "Move Directory, ex) cd folder", kMoveDirectory},
     { "rmdir", "Remove emptyed Directory ex) rmdir folder", kRemoveDirectory},
+    { "createaccount", "Create New Account", kCreateAccount},
 };
 
 char historyCommand[10][100];
@@ -78,6 +79,14 @@ void kStartConsoleShell(){
 
     // 화면보호기 프로세스 생성
     kCreateScreenSaverTask();
+    
+    //this code is for testing kScanf
+    ///////////////////////////////////////
+    // int tmpbufferIdx = 0;
+    // char tmpbuffer[300];
+    // tmpbufferIdx = kScanf(tmpbuffer);
+    // kPrintf(tmpbuffer);
+    ///////////////////////////////////////
 
     ///////////////////////////////////////////////////////////////
     int checkID = 0;
@@ -157,7 +166,13 @@ void kStartConsoleShell(){
         }
     }
     ///////////////////////////////////////////////////////////////
+    
+    // 프롬프트 출력
     kPrintf(CONSOLESHELL_PROMPTMESSAGE);
+    kPrintf(path);
+    kPrintf(">");
+
+    kSetClusterIndex(currentDirectoryClusterIndex);
 
     while(1){
         bbKey = bKey;
@@ -192,6 +207,8 @@ void kStartConsoleShell(){
 
             // 프롬프트 출력 및 커맨드 버퍼 초기화
             kPrintf("%s", CONSOLESHELL_PROMPTMESSAGE);
+            kPrintf(path);
+            kPrintf(">");  
             kMemSet(vcCommandBuffer, '\0', CONSOLESHELL_MAXCOMMANDBUFFERCOUNT);
             iCommandBufferIndex = 0;
         }
@@ -206,7 +223,9 @@ void kStartConsoleShell(){
                     {
                         //print new prompt
                         kPrintf( "\n" );
-                        kPrintf( "%s", CONSOLESHELL_PROMPTMESSAGE );
+                        kPrintf("%s", CONSOLESHELL_PROMPTMESSAGE);
+                        kPrintf(path);
+                        kPrintf(">");  
                         kPrintf( "%s", vcCommandBuffer );
                     }
                 }
@@ -248,6 +267,8 @@ void kStartConsoleShell(){
                 // 프롬프트와 history배열의 cidx번째 명령어 출력
                 kSetCursor(0, iCursorY);
                 kPrintf("%s", CONSOLESHELL_PROMPTMESSAGE);
+                kPrintf(path);
+                kPrintf(">");  
                 kPrintf( "%s", historyCommand[cidx]);
 
                 // iCommandBufferIndex와 vcCommandBuffer 설정
@@ -272,6 +293,9 @@ void kStartConsoleShell(){
                 // 프롬프트 출력
                 kSetCursor(0, iCursorY);
                 kPrintf("%s", CONSOLESHELL_PROMPTMESSAGE);
+                kPrintf(path);
+                kPrintf(">");  
+                
 
                 // history 배열 꽉차서 다른 값 나올 수 있음 => ccnt==0 이면 idx==cidx
                 if(ccnt == 0){
@@ -2632,7 +2656,7 @@ static void kMoveDirectory( const char* pcParamegerBuffer){
     else{
         for( int j = 0 ; j < FILESYSTEM_MAXDIRECTORYENTRYCOUNT ; j++ )
         {
-            if( directoryInfo[ j ].dwStartClusterIndex != 0 &&
+            if( directoryInfo[ j ].dwStartClusterIndex != 0 && kStrLen(directoryInfo[j].vcFileName) == kStrLen(vcFileName) && 
                 kMemCmp(directoryInfo[ j ].vcFileName,vcFileName,kStrLen(vcFileName))==0 && 
                     directoryInfo[j].flag == 1)
             {
@@ -2750,6 +2774,18 @@ static void kShowDirectory( const char* pcParameterBuffer )
             }     
         }
     }   
+}
+
+/**
+ * 계정 생성
+ */
+static void kCreateAccount(const char* pcParameterBuffer){
+    // char vcID[FILESYSTEM_MAXUSERNAMELENGTH];
+    // char vcPassword[FILESYSTEM_MAXPASSWORDLENGTH];
+
+    // kPrintf("Input your ID: ");
+    // kScanSetBuffer(vcID);
+    
 }
 
 

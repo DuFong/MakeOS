@@ -1,5 +1,6 @@
 #include "Utility.h"
 #include "AssemblyUtility.h"
+#include "Keyboard.h"
 #include <stdarg.h>
 
 volatile QWORD g_qwTickCount = 0;
@@ -7,6 +8,57 @@ volatile QWORD g_qwTickCount = 0;
 /**
  *  메모리를 특정 값으로 채움
  */
+int kScanf(char * scanBuffer) // before you use scanf, you need to allocate buffer size 300
+{
+    
+    int iScanBufferIndex = 0;
+    BYTE bKey = 0;
+    int iCursorX, iCursorY;
+
+    while (1)
+    {
+        bKey = kGetCh();
+
+        if (bKey == KEY_BACKSPACE)
+        {
+            if (iScanBufferIndex > 0)
+            {
+                kGetCursor(&iCursorX, &iCursorY);
+                kPrintStringXY(iCursorX - 1, iCursorY, " ");
+                kSetCursor(iCursorX - 1, iCursorY);
+                iScanBufferIndex--;
+            }
+        }
+        else if (bKey == KEY_ENTER)
+        {
+            kPrintf("\n");
+
+            if (iScanBufferIndex > 0)
+            {
+                scanBuffer[iScanBufferIndex] = '\0';
+                
+            }
+
+            // 프롬프트 출력 및 커맨드 버퍼 초기화
+            //kMemSet(vcCommandBuffer, '\0', 300);
+            //iCommandBufferIndex = 0;
+            return iScanBufferIndex;
+        }
+        else if ((bKey == KEY_LSHIFT) || (bKey == KEY_RSHIFT) || (bKey == KEY_CAPSLOCK) || (bKey == KEY_NUMLOCK) || (bKey == KEY_SCROLLLOCK))
+        {
+            ;
+        }
+        else
+        {
+            // 버퍼에 공간이 남아 있을때만 가능
+            if (iScanBufferIndex < 300)
+            {
+                scanBuffer[iScanBufferIndex++] = bKey;
+                kPrintf("%c", bKey);
+            }
+        }
+    }
+}
 void kMemSet( void* pvDestination, BYTE bData, int iSize )
 {
     int i;
