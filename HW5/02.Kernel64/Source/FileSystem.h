@@ -103,7 +103,6 @@ typedef struct kPartitionStruct
     DWORD dwSizeInSector;
 } PARTITION;
 
-
 // MBR 자료구조
 typedef struct kMBRStruct
 {
