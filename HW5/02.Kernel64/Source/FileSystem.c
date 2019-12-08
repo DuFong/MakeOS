@@ -2162,6 +2162,12 @@ BOOL kCreateLoginFile()
     pstEntry.userLevel = AUTH_LEVEL_ADMIN;
 
     kCloseDirectory(userHome);
+
+    // 공유폴더 생성 .......?
+    DIR* sfolder;
+    sfolder = kOpenDirectory("sharedfolder");
+    DIRECTORYENTRY sfolderEntry;
+    kCloseDirectory(sfolder);
     
     // Login 엔트리를 등록
     if( kSetLoginEntryData( loginEntryIndex, &pstEntry ) == FALSE )
