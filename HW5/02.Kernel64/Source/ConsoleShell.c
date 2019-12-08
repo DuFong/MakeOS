@@ -3024,33 +3024,3 @@ void kScreenSaverOff(){
     // 화면보호기 실행 전 화면 복구
     kMemCpy(CONSOLE_VIDEOMEMORYADDRESS, g_stScreenSaver.vcScreen, CONSOLE_WIDTH * CONSOLE_HEIGHT * 2);
 }
-
-static void kCreateUser( const char* pcParameterBuffer )
-{
-    PARAMETERLIST stList;
-    char vcFileName[ 50 ];
-    int iLength;
-    DWORD dwCluster;
-    int i;
-    FILE* pstFile;
-    
-    // 파라미터 리스트를 초기화하여 파일 이름을 추출
-    kInitializeParameter( &stList, pcParameterBuffer );
-    iLength = kGetNextParameter( &stList, vcFileName );
-    vcFileName[ iLength ] = '\0';
-    if( ( iLength > ( FILESYSTEM_MAXFILENAMELENGTH - 1 ) ) || ( iLength == 0 ) )
-    {
-        kPrintf( "Too Long or Too Short File Name\n" );
-        return ;
-    }
-
-    pstFile = fopen( vcFileName, "w" );
-    if( pstFile == NULL )
-    {
-        kPrintf( "File Create Fail\n" );
-        return;
-    }
-    fclose( pstFile );
-    kPrintf( "File Create Success\n" );
-}
-
