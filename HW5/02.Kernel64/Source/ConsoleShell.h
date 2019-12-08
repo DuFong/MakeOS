@@ -88,6 +88,7 @@ static void kRemoveDirectory(const char* pcParameterBuffer);
 static void kShowDirectory(const char* pcParameterBuffer);
 static void kCreateAccount(const char* pcParameterBuffer);
 static void kChangePasswd(const char* pcParameterBuffer);
+static void kLogout( const char* pcParameterBuffer );
 
 void kCallCls();
 void kCallTaskList();
