@@ -33,6 +33,7 @@ typedef struct kParameterListStruct{
 
 #pragma pack(pop)
 
+void kLoginBeforeConsoleShell();
 void kStartConsoleShell();
 void kExecuteCommand(const char* pcCommandBuffer);
 void kInitializeParameter(PARAMETERLIST* pstList, const char* pcParameter);
@@ -86,6 +87,7 @@ static void kMoveDirectory(const char* pcParamegerBuffer);
 static void kRemoveDirectory(const char* pcParameterBuffer);
 static void kShowDirectory(const char* pcParameterBuffer);
 static void kCreateAccount(const char* pcParameterBuffer);
+static void kChangePasswd(const char* pcParameterBuffer);
 
 void kCallCls();
 void kCallTaskList();

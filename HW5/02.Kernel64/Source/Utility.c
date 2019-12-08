@@ -8,7 +8,7 @@ volatile QWORD g_qwTickCount = 0;
 /**
  *  메모리를 특정 값으로 채움
  */
-int kScanf(char * scanBuffer) // before you use scanf, you need to allocate buffer size 300
+int kScanf(char * scanBuffer, BOOL bPrintKey) // before you use scanf, you need to allocate buffer size 300
 {
     
     int iScanBufferIndex = 0;
@@ -54,7 +54,8 @@ int kScanf(char * scanBuffer) // before you use scanf, you need to allocate buff
             if (iScanBufferIndex < 300)
             {
                 scanBuffer[iScanBufferIndex++] = bKey;
-                kPrintf("%c", bKey);
+                if(bPrintKey)
+                    kPrintf("%c", bKey);
             }
         }
     }

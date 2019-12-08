@@ -297,5 +297,6 @@ static BOOL kCreateDirectory( const char* pcFileName, DIRECTORYENTRY* pstEntry,
  BOOL kWriteLoginEntryData( const char* newUserName, const char* newPassword );
  int kFindFreeLoginEntry( void );
  BOOL kSetLoginEntryData( int iIndex, LOGINENTRY* pstEntry );
+BOOL kChangePassword(char* userName, char* inputpasswd);
 
 #endif /*__FILESYSTEM_H__*/

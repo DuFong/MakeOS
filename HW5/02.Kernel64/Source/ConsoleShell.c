@@ -56,6 +56,7 @@ SHELLCOMMANDENTRY gs_vstCommandTable[] = {
     { "cd", "Move Directory, ex) cd folder", kMoveDirectory},
     { "rmdir", "Remove emptyed Directory ex) rmdir folder", kRemoveDirectory},
     { "createaccount", "Create New Account", kCreateAccount},
+    { "changepasswd", "Change User's Password", kChangePasswd},
 };
 
 char historyCommand[10][100];
@@ -68,6 +69,90 @@ scrollDownPointer = 0;
 
 char path[100] = "/";
 DWORD currentDirectoryClusterIndex = 0;
+char userName[FILESYSTEM_MAXUSERNAMELENGTH];
+
+
+void kLoginBeforeConsoleShell(){
+
+    char vcCommandBuffer[CONSOLESHELL_MAXCOMMANDBUFFERCOUNT];
+    int iCommandBufferIndex = 0;
+    BYTE bKey = 0;    
+    int iCursorX, iCursorY;
+
+    int checkID = 0;
+    char inputID[14] = {
+        '\0',
+    };
+    int inputIDindex = 0;
+    char tmpID[5] = {'a', 'b', 'c', '\0'};
+    char tmpPW[8] = {'1', '2', '3', '4', '\0'};
+    kPrintf("please enter your id : ");
+
+    while (1)
+    {
+        bKey = kGetCh();
+
+        if (bKey == KEY_BACKSPACE)
+        {
+            if (iCommandBufferIndex > 0)
+            {
+                kGetCursor(&iCursorX, &iCursorY);
+                kPrintStringXY(iCursorX - 1, iCursorY, " ");
+                kSetCursor(iCursorX - 1, iCursorY);
+                iCommandBufferIndex--;
+            }
+        }
+        else if (bKey == KEY_ENTER)
+        {
+            kPrintf("\n");
+            if (iCommandBufferIndex > 0)
+            {
+                vcCommandBuffer[iCommandBufferIndex] = '\0';
+                if (checkID == 0)
+                { //when id checking needed
+                    kMemCpy(inputID, vcCommandBuffer, iCommandBufferIndex);
+                    inputIDindex = iCommandBufferIndex;
+                    checkID = 1;
+                    kMemSet(vcCommandBuffer, '\0', CONSOLESHELL_MAXCOMMANDBUFFERCOUNT);
+                        iCommandBufferIndex = 0;
+                    kPrintf("enter your password : ");
+                }
+                else if (checkID == 1)
+                {
+                    if ((kMemCmp(tmpID, inputID, inputIDindex) == 0) && (kMemCmp(tmpPW, vcCommandBuffer, iCommandBufferIndex)==0))
+                    //if (kCheckLoginState( inputID, vcCommandBuffer ))
+                    {
+                        kPrintf("Login success!\n"); 
+                        kMemCpy(userName, inputID, inputIDindex);
+                        return;
+                    }
+                    else
+                    {
+                        kPrintf("wrong id or password. try again\n");
+                        kPrintf("please enter your id : ");
+                        checkID = 0;
+                        kMemSet(inputID, '\0', 14);
+                        kMemSet(vcCommandBuffer, '\0', CONSOLESHELL_MAXCOMMANDBUFFERCOUNT);
+                        iCommandBufferIndex = 0;
+                        continue;
+                    }
+                }
+            }
+        }
+        else if ((bKey == KEY_LSHIFT) || (bKey == KEY_RSHIFT) || (bKey == KEY_CAPSLOCK) || (bKey == KEY_NUMLOCK) || (bKey == KEY_SCROLLLOCK))
+        {
+            ;
+        }
+        else
+        {            
+            if (iCommandBufferIndex < CONSOLESHELL_MAXCOMMANDBUFFERCOUNT)
+            {
+                vcCommandBuffer[iCommandBufferIndex++] = bKey;
+                kPrintf("%c", bKey);
+            }
+        }
+    }
+}
 
 // 셸의 메인 루프
 void kStartConsoleShell(){
@@ -80,6 +165,7 @@ void kStartConsoleShell(){
     // 화면보호기 프로세스 생성
     kCreateScreenSaverTask();
     
+    kLoginBeforeConsoleShell();
     //this code is for testing kScanf
     ///////////////////////////////////////
     // int tmpbufferIdx = 0;
@@ -89,8 +175,8 @@ void kStartConsoleShell(){
     ///////////////////////////////////////
 
     ///////////////////////////////////////////////////////////////
-    int checkID = 0;
-    char inputID[14] = {
+    /*int checkID = 0;
+    char inputID[10] = {
         '\0',
     };
     if(!kCreateLoginFile()){
@@ -131,7 +217,8 @@ void kStartConsoleShell(){
                 }
                 else if (checkID == 1)
                 {
-                    if ((kMemCmp(tmpID, inputID, inputIDindex) == 0) && (kMemCmp(tmpPW, vcCommandBuffer, iCommandBufferIndex)==0))
+
+                    if ((kMemCmp(tmpID, inputID, inputIDindex) == 0) && (kMemCmp(tmpPW, vcCommandBuffer, iCommandBufferIndex) == 0))
                     //if (kCheckLoginState( inputID, vcCommandBuffer ))
                     {
                         kPrintf("Login success!\n");
@@ -169,7 +256,7 @@ void kStartConsoleShell(){
                 kPrintf("%c", bKey);
             }
         }
-    }
+    }*/
     ///////////////////////////////////////////////////////////////
     
     // 프롬프트 출력
@@ -2785,12 +2872,40 @@ static void kShowDirectory( const char* pcParameterBuffer )
  * 계정 생성
  */
 static void kCreateAccount(const char* pcParameterBuffer){
-    // char vcID[FILESYSTEM_MAXUSERNAMELENGTH];
-    // char vcPassword[FILESYSTEM_MAXPASSWORDLENGTH];
+    char vcID[FILESYSTEM_MAXUSERNAMELENGTH];
+    char vcPassword[FILESYSTEM_MAXPASSWORDLENGTH];
+    char vcPasswordConfilm[FILESYSTEM_MAXPASSWORDLENGTH];
 
-    // kPrintf("Input your ID: ");
-    // kScanSetBuffer(vcID);
+    kPrintf("Enter your ID: ");
+    kScanf(vcID, TRUE);
+    kPrintf("Enter your password: ");
+    kScanf(vcPassword, FALSE);
+    kPrintf("Enter your password again: ");
+    kScanf(vcPasswordConfilm, FALSE);
     
+    // 비밀번호 확인 성공
+    if(kStrLen(vcPassword) == kStrLen(vcPasswordConfilm) && kMemCmp(vcPassword, vcPasswordConfilm, kStrLen(vcPassword)) == 0){
+        if(!kWriteLoginEntryData(vcID, vcPassword)){
+            kPrintf("Sorry, failed to create a new account");
+        }
+    }
+}
+
+/**
+ * 계정 비밀번호 변경
+ */
+static void kChangePasswd( const char* pcParameterBuffer ){
+    char vcPassword[FILESYSTEM_MAXPASSWORDLENGTH];
+
+    kPrintf("Enter your password: ");
+    kScanf(vcPassword, FALSE);
+
+    if(kChangePassword(userName, vcPassword)){
+        kPrintf("Change Password Success !!");
+    }
+    else{
+        kPrintf("Change Password Fail :(");
+    }
 }
 
 
