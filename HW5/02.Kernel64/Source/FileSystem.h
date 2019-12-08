@@ -252,7 +252,7 @@ BOOL kGetHDDInformation( HDDINFORMATION* pstInformation);
 static BOOL kReadClusterLinkTable( DWORD dwOffset, BYTE* pbBuffer );
 static BOOL kWriteClusterLinkTable( DWORD dwOffset, BYTE* pbBuffer );
 static BOOL kReadCluster( DWORD dwOffset, BYTE* pbBuffer );
-static BOOL kWriteCluster( DWORD dwOffset, BYTE* pbBuffer );
+BOOL kWriteCluster( DWORD dwOffset, BYTE* pbBuffer );
 static DWORD kFindFreeCluster( void );
 static BOOL kSetClusterLinkData( DWORD dwClusterIndex, DWORD dwData );
 static BOOL kGetClusterLinkData( DWORD dwClusterIndex, DWORD* pdwData );

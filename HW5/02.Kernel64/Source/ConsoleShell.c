@@ -59,6 +59,7 @@ SHELLCOMMANDENTRY gs_vstCommandTable[] = {
     { "changepasswd", "Change User's Password", kChangePasswd},
     { "logout", "Logout User's Account", kLogout},
     { "showaccount", "Show All Accounts", kShowAccount},
+    { "changelevel", "Change User's Level", kChangeLevel},
 };
 
 char historyCommand[10][100];
@@ -101,7 +102,7 @@ void kLoginBeforeConsoleShell(){
         {           
             kPrintf("cluster index = %d\n", currentDirectoryClusterIndex);
             kPrintf("Login success!\n"); 
-            kMemCpy(userName, inputID, inputIDindex);
+            kMemCpy(userName, inputID, kStrLen(inputID));
             kSetClusterIndex(currentDirectoryClusterIndex);
             return;
         }
@@ -2043,13 +2044,7 @@ static void kShowAccount( const char* pcParameterBuffer )
     
     pstLoginEntry = kReadLogin();
     
-    // 먼저 루프를 돌면서 디렉터리에 있는 파일의 개수와 전체 파일이 사용한 크기를 계산
-    // iTotalCount = 0;
-    // dwTotalByte = 0;
-    // dwUsedClusterCount = 0;
-    
-    iCount = 0;
-    
+    kPrintf("userName     password    StartClusterIndex    userLevel\n");
     for( int i = 0 ; i < FILESYSTEM_MAXLOGINENTRYCOUNT ; i++ )
     {
         //해당 엔트리에 계정 정보가 없음
@@ -2057,7 +2052,6 @@ static void kShowAccount( const char* pcParameterBuffer )
             continue;
         }
         pstEntry = pstLoginEntry[i];
-        kPrintf("userName     password    StartClusterIndex    userLevel\n");
         kPrintf(" %s\t\t%s\t\t%d\t\t  %d\n", pstEntry.userName, pstEntry.password, pstEntry.dwStartClusterIndex, pstEntry.userLevel);
 
     }
@@ -2972,7 +2966,54 @@ static void kLogout( const char* pcParameterBuffer ){
 
 }
 
+/**
+ * 계정 권한(level) 변경
+ */
+static BOOL kChangeLevel( const char* pcParameterBuffer ){
+    PARAMETERLIST stList;
+    char inputuser[FILESYSTEM_MAXUSERNAMELENGTH], strlevel[10];
+    int level;
+    int iSectorCount;
+    LOGINENTRY* loginEntry;
+    int currentUserLength, nameLength;
 
+    // 파라미터 리스트를 초기화하여 userName과 바꿀 권한(level) 추출
+    kInitializeParameter( &stList, pcParameterBuffer );
+    if( ( kGetNextParameter( &stList, inputuser ) == 0 ) ||
+        ( kGetNextParameter( &stList, strlevel ) == 0 ) )
+    {
+        kPrintf( "ex) changelevel bbangzae(userName) 3(level)\n" );
+        kPrintf( " ( level scope ) 0, 1, 2, 3\n" );
+        return ;
+    }
+    level = kAToI( strlevel, 10 );
+
+    //계정 권한 변경은 admin만 가능
+    char * adminname = "admin\0";
+    currentUserLength = kStrLen( userName );
+    nameLength = kStrLen( inputuser );
+
+    if( (currentUserLength != kStrLen(adminname)) || (kMemCmp( userName, adminname, currentUserLength ) != 0) ){
+        kPrintf("you cannot change user's authority !!\n");
+        return FALSE;
+    }
+
+    loginEntry = kReadLogin();
+    for( int i = 0 ; i < FILESYSTEM_MAXLOGINENTRYCOUNT ; i++ )
+    {
+        if( kMemCmp( loginEntry[ i ].userName, inputuser, nameLength ) == 0 )
+        {
+            loginEntry[i].userLevel = level;
+            // LoginFile에 씀
+            if( kWriteCluster( LOGIN_CLUSTER_NUM, loginEntry ) == FALSE )
+            {
+                return FALSE;
+            }   
+            kPrintf("Success Permission Change !!\n");
+        }
+    }
+    return TRUE;
+}
 
 
 
