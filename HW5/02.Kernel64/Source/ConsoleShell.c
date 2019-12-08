@@ -57,6 +57,7 @@ SHELLCOMMANDENTRY gs_vstCommandTable[] = {
     { "rmdir", "Remove emptyed Directory ex) rmdir folder", kRemoveDirectory},
     { "createaccount", "Create New Account", kCreateAccount},
     { "changepasswd", "Change User's Password", kChangePasswd},
+    { "logout", "Logout User's Account", kLogout},
     { "showaccount", "Show All Accounts", kShowAccount},
 };
 
@@ -170,98 +171,6 @@ void kStartConsoleShell(){
     kCreateScreenSaverTask();
     
     kLoginBeforeConsoleShell();
-    //this code is for testing kScanf
-    ///////////////////////////////////////
-    // int tmpbufferIdx = 0;
-    // char tmpbuffer[300];
-    // tmpbufferIdx = kScanf(tmpbuffer);
-    // kPrintf(tmpbuffer);
-    ///////////////////////////////////////
-
-    ///////////////////////////////////////////////////////////////
-    /*int checkID = 0;
-    char inputID[10] = {
-        '\0',
-    };
-    if(!kCreateLoginFile()){
-        kPrintf("Create Root Fail");
-    }
-    int inputIDindex = 0;
-    char tmpID[5] = {'a', 'b', 'c', '\0'};
-    char tmpPW[8] = {'1', '2', '3', '4', '\0'};
-    kPrintf("please enter your id : ");
-
-    while (1)
-    {
-        bKey = kGetCh();
-
-        if (bKey == KEY_BACKSPACE)
-        {
-            if (iCommandBufferIndex > 0)
-            {
-                kGetCursor(&iCursorX, &iCursorY);
-                kPrintStringXY(iCursorX - 1, iCursorY, " ");
-                kSetCursor(iCursorX - 1, iCursorY);
-                iCommandBufferIndex--;
-            }
-        }
-        else if (bKey == KEY_ENTER)
-        {
-            kPrintf("\n");
-
-            if (iCommandBufferIndex > 0)
-            {
-                vcCommandBuffer[iCommandBufferIndex] = '\0';
-                if (checkID == 0)
-                { //when id checking needed
-                    kMemCpy(inputID, vcCommandBuffer, iCommandBufferIndex);
-                    inputIDindex = iCommandBufferIndex;
-                    checkID = 1;
-                    kPrintf("enter your password : ");
-                }
-                else if (checkID == 1)
-                {
-
-                    if ((kMemCmp(tmpID, inputID, inputIDindex) == 0) && (kMemCmp(tmpPW, vcCommandBuffer, iCommandBufferIndex) == 0))
-                    //if (kCheckLoginState( inputID, vcCommandBuffer ))
-                    {
-                        kPrintf("Login success!\n");
-                        kMemSet(vcCommandBuffer, '\0', CONSOLESHELL_MAXCOMMANDBUFFERCOUNT);
-                        iCommandBufferIndex = 0;
-                        break;
-                    }
-                    else
-                    {
-                        kPrintf("wrong id or password. try again\n");
-                        kPrintf("please enter your id : ");
-                        checkID = 0;
-                        kMemSet(vcCommandBuffer, '\0', CONSOLESHELL_MAXCOMMANDBUFFERCOUNT);
-                        kMemSet(inputID, '\0', 14);
-                        iCommandBufferIndex = 0;
-                        continue;
-                    }
-                }
-            }
-
-            // 프롬프트 출력 및 커맨드 버퍼 초기화
-            kMemSet(vcCommandBuffer, '\0', CONSOLESHELL_MAXCOMMANDBUFFERCOUNT);
-            iCommandBufferIndex = 0;
-        }
-        else if ((bKey == KEY_LSHIFT) || (bKey == KEY_RSHIFT) || (bKey == KEY_CAPSLOCK) || (bKey == KEY_NUMLOCK) || (bKey == KEY_SCROLLLOCK))
-        {
-            ;
-        }
-        else
-        {
-            // 버퍼에 공간이 남아 있을때만 가능
-            if (iCommandBufferIndex < CONSOLESHELL_MAXCOMMANDBUFFERCOUNT)
-            {
-                vcCommandBuffer[iCommandBufferIndex++] = bKey;
-                kPrintf("%c", bKey);
-            }
-        }
-    }*/
-    ///////////////////////////////////////////////////////////////
     
     // 프롬프트 출력
     kPrintf(CONSOLESHELL_PROMPTMESSAGE);
@@ -2990,15 +2899,32 @@ static void kChangePasswd( const char* pcParameterBuffer ){
     kScanf(vcPassword, FALSE);
 
     if(kChangePassword(userName, vcPassword)){
-        kPrintf("Change Password Success !!");
+        kPrintf("Change Password Success !!\n");
     }
     else{
-        kPrintf("Change Password Fail :(");
+        kPrintf("Change Password Fail :(\n");
     }
+    kFlushFileSystemCache();
 }
 
 
+/**
+ * 계정 로그아웃
+ */
+static void kLogout( const char* pcParameterBuffer ){
+    kPrintf( "Cache Flush... \n");
+    if( kFlushFileSystemCache() == FALSE )
+    {
+        return FALSE;
+    }
 
+    kPrintf("=========================================\n");
+    kPrintf("            MINT64 Login XD              \n");
+    kPrintf("=========================================\n");
+
+    kLoginBeforeConsoleShell();
+
+}
 
 
 
@@ -3033,33 +2959,3 @@ void kScreenSaverOff(){
     // 화면보호기 실행 전 화면 복구
     kMemCpy(CONSOLE_VIDEOMEMORYADDRESS, g_stScreenSaver.vcScreen, CONSOLE_WIDTH * CONSOLE_HEIGHT * 2);
 }
-
-static void kCreateUser( const char* pcParameterBuffer )
-{
-    PARAMETERLIST stList;
-    char vcFileName[ 50 ];
-    int iLength;
-    DWORD dwCluster;
-    int i;
-    FILE* pstFile;
-    
-    // 파라미터 리스트를 초기화하여 파일 이름을 추출
-    kInitializeParameter( &stList, pcParameterBuffer );
-    iLength = kGetNextParameter( &stList, vcFileName );
-    vcFileName[ iLength ] = '\0';
-    if( ( iLength > ( FILESYSTEM_MAXFILENAMELENGTH - 1 ) ) || ( iLength == 0 ) )
-    {
-        kPrintf( "Too Long or Too Short File Name\n" );
-        return ;
-    }
-
-    pstFile = fopen( vcFileName, "w" );
-    if( pstFile == NULL )
-    {
-        kPrintf( "File Create Fail\n" );
-        return;
-    }
-    fclose( pstFile );
-    kPrintf( "File Create Success\n" );
-}
-
