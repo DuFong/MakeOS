@@ -68,7 +68,13 @@ BOOL kInitializeFileSystem( void )
     // 파일 시스템 연결
     if( kMount() == FALSE )
     {
-        return FALSE;
+        //Retry Mount ,retrying Format
+        if(kFormat()==FALSE){
+            return FALSE;
+        }
+        if(kMount() == FALSE){
+            return FALSE;
+        }
     }
     
     // 핸들을 위한 공간을 할당
@@ -253,6 +259,7 @@ BOOL kFormat( void )
         kDiscardAllCacheBuffer( CACHE_DATAAREA );
     }
     kSetDotInDirectory();
+    kMount();
     // 동기화 처리
     kUnlock( &( gs_stFileSystemManager.stMutex ) );
 
@@ -2154,6 +2161,7 @@ BOOL kCreateLoginFile()
         kSetClusterLinkData( dwCluster, FILESYSTEM_FREECLUSTER );
         return FALSE;
     }
+    kFlushFileSystemCache();
     return TRUE;
 }
 
