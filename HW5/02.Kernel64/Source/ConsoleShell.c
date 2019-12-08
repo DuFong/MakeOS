@@ -2040,62 +2040,70 @@ static void kShowAccount( const char* pcParameterBuffer )
     char vcTempValue[ 50 ];
     DWORD dwTotalByte;
     DWORD dwUsedClusterCount;
-    FILESYSTEMMANAGER stManager;
     
-    // 파일 시스템 정보를 얻음
-    kGetFileSystemInformation( &stManager );
-
     pstLoginEntry = kReadLogin();
     
     // 먼저 루프를 돌면서 디렉터리에 있는 파일의 개수와 전체 파일이 사용한 크기를 계산
-    iTotalCount = 0;
-    dwTotalByte = 0;
-    dwUsedClusterCount = 0;
+    // iTotalCount = 0;
+    // dwTotalByte = 0;
+    // dwUsedClusterCount = 0;
     
     iCount = 0;
     
-    // 버퍼 초기화
-    kMemSet( vcBuffer, ' ', sizeof( vcBuffer ) - 1 );
-    vcBuffer[ sizeof( vcBuffer ) - 1 ] = '\0';
-    
-    pstEntry = pstLoginEntry[0];
-
-    // 계정 이름 삽입
-    kMemCpy(vcBuffer, pstEntry.userName, kStrLen(pstEntry.userName) + 1);
-
-    // 계정 비밀번호
-    kSPrintf(vcTempValue, "%s", pstEntry.password);
-    kMemCpy(vcBuffer + 30, vcTempValue, kStrLen(vcTempValue) + 1);
-
-    // 시작 클러스터
-    kSPrintf(vcTempValue, "0x%X Cluster", pstEntry.dwStartClusterIndex);
-    kMemCpy(vcBuffer + 55, vcTempValue, kStrLen(vcTempValue) + 1);
-
-    kPrintf("%s\n", vcBuffer);
-    for(i = 1; i < FILESYSTEM_MAXLOGINENTRYCOUNT; i++){
-        // 해당 엔트리에 계정 정보가 없음
+    for( int i = 0 ; i < FILESYSTEM_MAXLOGINENTRYCOUNT ; i++ )
+    {
+        //해당 엔트리에 계정 정보가 없음
         if(pstLoginEntry[i].dwStartClusterIndex == 0){
             continue;
         }
         pstEntry = pstLoginEntry[i];
+        kPrintf("userName     password    StartClusterIndex    userLevel\n");
+        kPrintf(" %s\t\t%s\t\t%d\t\t  %d\n", pstEntry.userName, pstEntry.password, pstEntry.dwStartClusterIndex, pstEntry.userLevel);
 
-        // 버퍼 초기화
-        kMemSet( vcBuffer, ' ', sizeof( vcBuffer ) - 1 );
-        vcBuffer[ sizeof( vcBuffer ) - 1 ] = '\0';
-
-        // 계정 이름 삽입
-        kMemCpy(vcBuffer, pstEntry.userName, kStrLen(pstEntry.userName) + 1);
-
-        // 계정 비밀번호
-        kSPrintf(vcTempValue, "%s", pstEntry.password);
-        kMemCpy(vcBuffer + 30, vcTempValue, kStrLen(vcTempValue) + 1);
-
-        // 시작 클러스터
-        kSPrintf(vcTempValue, "0x%X Cluster", pstEntry.dwStartClusterIndex);
-        kMemCpy(vcBuffer + 55, vcTempValue, kStrLen(vcTempValue) + 1);
-
-        kPrintf("%s\n", vcBuffer);
     }
+
+    // // 버퍼 초기화
+    // kMemSet( vcBuffer, ' ', sizeof( vcBuffer ) - 1 );
+    // vcBuffer[ sizeof( vcBuffer ) - 1 ] = '\0';
+    
+    // pstEntry = pstLoginEntry[0];
+
+    // // 계정 이름 삽입
+    // kMemCpy(vcBuffer, pstEntry.userName, kStrLen(pstEntry.userName) + 1);
+
+    // // 계정 비밀번호
+    // kSPrintf(vcTempValue, "%s", pstEntry.password);
+    // kMemCpy(vcBuffer + 30, vcTempValue, kStrLen(vcTempValue) + 1);
+
+    // // 시작 클러스터
+    // kSPrintf(vcTempValue, "0x%X Cluster", pstEntry.dwStartClusterIndex);
+    // kMemCpy(vcBuffer + 55, vcTempValue, kStrLen(vcTempValue) + 1);
+
+    // kPrintf("%s\n", vcBuffer);
+    // for(i = 1; i < FILESYSTEM_MAXLOGINENTRYCOUNT; i++){
+    //     // 해당 엔트리에 계정 정보가 없음
+    //     if(pstLoginEntry[i].dwStartClusterIndex == 0){
+    //         continue;
+    //     }
+    //     pstEntry = pstLoginEntry[i];
+
+    //     // 버퍼 초기화
+    //     kMemSet( vcBuffer, ' ', sizeof( vcBuffer ) - 1 );
+    //     vcBuffer[ sizeof( vcBuffer ) - 1 ] = '\0';
+
+    //     // 계정 이름 삽입
+    //     kMemCpy(vcBuffer, pstEntry.userName, kStrLen(pstEntry.userName) + 1);
+
+    //     // 계정 비밀번호
+    //     kSPrintf(vcTempValue, "%s", pstEntry.password);
+    //     kMemCpy(vcBuffer + 30, vcTempValue, kStrLen(vcTempValue) + 1);
+
+    //     // 시작 클러스터
+    //     kSPrintf(vcTempValue, "0x%X Cluster", pstEntry.dwStartClusterIndex);
+    //     kMemCpy(vcBuffer + 55, vcTempValue, kStrLen(vcTempValue) + 1);
+
+    //     kPrintf("%s\n", vcBuffer);
+    // }
 }
 
 /**
