@@ -78,6 +78,19 @@ typedef int (* fWriteHDDSector ) ( BOOL bPrimary, BOOL bMaster, DWORD dwLBA,
 #define dirent      kDirectoryEntryStruct
 #define d_name      vcFileName
 
+
+/*  권한에 관련된 매크로 정의 */
+
+// 권한 레벨의 수
+#define AUTH_MAXLEVELCOUNT  5
+
+// 권한의 레벨 등급
+#define AUTH_LEVEL_HIGHEST            0
+#define AUTH_LEVEL_HIGH               1
+#define AUTH_LEVEL_MEDIUM             2
+#define AUTH_LEVEL_LOW                3
+#define AUTH_LEVEL_LOWEST             4
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 // 구조체
@@ -149,6 +162,8 @@ typedef struct kLoginEntryStruct
     char userName[ FILESYSTEM_MAXUSERNAMELENGTH ];
     char password[ FILESYSTEM_MAXPASSWORDLENGTH ];
     DWORD dwStartClusterIndex;
+
+    int userLevel;
 } LOGINENTRY;
 
 #pragma pack( pop )

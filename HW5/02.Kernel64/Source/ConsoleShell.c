@@ -82,18 +82,41 @@ void kLoginBeforeConsoleShell(){
     int iCursorX, iCursorY;
 
     int checkID = 0;
-    char inputID[14] = {
-        '\0',
-    };
+    char inputID[14] = {'\0',};
+    char inputPW[14] = {'\0',};
     int inputIDindex = 0;
-    char tmpID[5] = {'a', 'b', 'c', '\0'};
-    char tmpPW[8] = {'1', '2', '3', '4', '\0'};
+ 
     if(!kCreateLoginFile()){
         kPrintf("Create Root Fail");
     }
-    kPrintf("please enter your id : ");
 
-    while (1)
+    while(1){
+        kPrintf("please enter your id : ");
+        kScanf(inputID, TRUE);
+
+        kPrintf("Enter your password: ");
+        kScanf(inputPW, FALSE);
+
+        if (kCheckLoginState( inputID, inputPW , &currentDirectoryClusterIndex ))
+        {           
+            kPrintf("cluster index = %d\n", currentDirectoryClusterIndex);
+            kPrintf("Login success!\n"); 
+            kMemCpy(userName, inputID, inputIDindex);
+            kSetClusterIndex(currentDirectoryClusterIndex);
+            return;
+        }
+        // 비밀번호 실패
+        else{
+            kPrintf("wrong id or password. try again\n");
+            
+            kMemSet(inputID, '\0', 14);
+            kMemSet(inputPW, '\0', 14);
+            continue;
+        }
+    }
+    
+
+    /*while (1)
     {
         bKey = kGetCh();
 
@@ -126,7 +149,9 @@ void kLoginBeforeConsoleShell(){
                 {
                     //if ((kMemCmp(tmpID, inputID, inputIDindex) == 0) && (kMemCmp(tmpPW, vcCommandBuffer, iCommandBufferIndex)==0))
                     if (kCheckLoginState( inputID, vcCommandBuffer , &currentDirectoryClusterIndex ))
+
                     {
+                        kPringf("cluster index = %d\n", currentDirectoryClusterIndex);
                         kPrintf("Login success!\n"); 
                         kMemCpy(userName, inputID, inputIDindex);
                         kSetClusterIndex(currentDirectoryClusterIndex);
@@ -157,7 +182,7 @@ void kLoginBeforeConsoleShell(){
                 kPrintf("%c", bKey);
             }
         }
-    }
+    }*/
 }
 
 // 셸의 메인 루프
@@ -2725,20 +2750,31 @@ static void kMoveDirectory( const char* pcParamegerBuffer){
     else if(kMemCmp(vcFileName, "..", 3) == 0){
        
         currentDirectoryClusterIndex = directoryInfo[1].ParentDirectoryCluserIndex;
-        kSetClusterIndex(currentDirectoryClusterIndex);
-        
+        kSetClusterIndex(currentDirectoryClusterIndex);        
         kMemCpy(path,directoryInfo[1].ParentDirectoryPath,kStrLen(directoryInfo[1].ParentDirectoryPath)+1);
      }   
     else{
         for( int j = 0 ; j < FILESYSTEM_MAXDIRECTORYENTRYCOUNT ; j++ )
-        {
-            if( directoryInfo[ j ].dwStartClusterIndex != 0 && kStrLen(directoryInfo[j].vcFileName) == kStrLen(vcFileName) && 
-                kMemCmp(directoryInfo[ j ].vcFileName,vcFileName,kStrLen(vcFileName))==0 && 
-                    directoryInfo[j].flag == 1)
-            {
+        {   //below folder's start cluster index != 0 && below folder's filename's strlen==filename && 
+            if( directoryInfo[ j ].dwStartClusterIndex != 0 && kStrLen(directoryInfo[j].vcFileName) == 
+            kStrLen(vcFileName) && kMemCmp(directoryInfo[ j ].vcFileName,vcFileName,kStrLen(vcFileName))==0 
+                && directoryInfo[j].flag == 1)
+            {   //if you'r current directory is root
+                if(currentDirectoryClusterIndex == 0)
+                {   //if you are not 'admin' and also folder(you want to move)is not your own user folder
+                    //get out!
+                    if ( (kGetUserLevel(userName) < 4) && (kMemCmp(vcFileName, userName, kStrLen(userName)) != 0) )
+                    {
+                        kPrintf("you cannot access to this folder\n");
+                        break;
+                    }
+                }                
+
+                //store currentpath and currentdircluster index in temp variable
                 kMemCpy(temp_path,path,kStrLen(path)+1);   
                 temp_index = currentDirectoryClusterIndex;
                 
+                //if path is root
                 if(kMemCmp(path,"/",2)==0)
                     kMemCpy(path + kStrLen(path),vcFileName,kStrLen(vcFileName)+1);
                 else{
@@ -2752,7 +2788,7 @@ static void kMoveDirectory( const char* pcParamegerBuffer){
                 directoryInfo = kFindDirectory(currentDirectoryClusterIndex);
                 if( directoryInfo[ 0 ].dwStartClusterIndex != -1 )
                 {
-                kSetDotInDirectory();
+                    kSetDotInDirectory();
                     kUpdateDirectory(0,".",path,currentDirectoryClusterIndex);
                 
                 }

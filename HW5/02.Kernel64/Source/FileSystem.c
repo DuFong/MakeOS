@@ -862,7 +862,7 @@ static int kFindFreeDirectoryEntry( void )
  */
 static BOOL kSetDirectoryEntryData( int iIndex, DIRECTORYENTRY* pstEntry )
 {
-    DIRECTORYENTRY* pstRootEntry;
+    DIRECTORYENTRY* pstCurrentEntry;
     
     // 파일 시스템을 인식하지 못했거나 인덱스가 올바르지 않으면 실패
     if( ( gs_stFileSystemManager.bMounted == FALSE ) ||
@@ -877,11 +877,11 @@ static BOOL kSetDirectoryEntryData( int iIndex, DIRECTORYENTRY* pstEntry )
         return FALSE;
     }    
     
-    // 루트 디렉터리에 있는 해당 데이터를 갱신
-    pstRootEntry = ( DIRECTORYENTRY* ) gs_vbTempBuffer;
-    kMemCpy( pstRootEntry + iIndex, pstEntry, sizeof( DIRECTORYENTRY ) );
+    // 현재 디렉터리에 있는 해당 데이터를 갱신
+    pstCurrentEntry = ( DIRECTORYENTRY* ) gs_vbTempBuffer;
+    kMemCpy( pstCurrentEntry + iIndex, pstEntry, sizeof( DIRECTORYENTRY ) );
 
-    // 루트 디렉터리에 씀
+    // 현재 디렉터리에 씀
     if( kWriteCluster( currentClusterIndex, gs_vbTempBuffer ) == FALSE )
     {
         return FALSE;
@@ -2349,4 +2349,30 @@ LOGINENTRY* kReadLogin(){
     // 로그인 디렉터리에 있는 해당 데이터를 갱신
     
     return gs_vbTempBuffer;;
+}
+
+int kGetUserLevel(char* userName){
+    LOGINENTRY* loginEntry;
+    int nameLength, level;
+    
+    //  LoginFile를 읽음
+    if( kReadCluster( LOGIN_CLUSTER_NUM, gs_vbTempBuffer ) == FALSE )
+    {
+        return FALSE;
+    }    
+    // 루트 디렉터리에 있는 해당 데이터를 갱신
+    loginEntry = ( LOGINENTRY* ) gs_vbTempBuffer;
+
+    // userName과 같은 엔트리를 찾은 후 level return
+    nameLength = kStrLen( userName );
+
+    for( int i = 0 ; i < FILESYSTEM_MAXLOGINENTRYCOUNT ; i++ )
+    {
+        if( kMemCmp( loginEntry[ i ].userName, userName, nameLength ) == 0 )
+        {
+            level = loginEntry[i].userLevel;
+            break;
+        }
+    }
+    return level;
 }
