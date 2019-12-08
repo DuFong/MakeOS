@@ -119,7 +119,6 @@ void kLoginBeforeConsoleShell(){
                 }
                 else if (checkID == 1)
                 {
-<<<<<<< HEAD
                     //if ((kMemCmp(tmpID, inputID, inputIDindex) == 0) && (kMemCmp(tmpPW, vcCommandBuffer, iCommandBufferIndex)==0))
                     if (kCheckLoginState( inputID, vcCommandBuffer ))
                     {
