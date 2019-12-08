@@ -859,7 +859,7 @@ static int kFindFreeDirectoryEntry( void )
  */
 static BOOL kSetDirectoryEntryData( int iIndex, DIRECTORYENTRY* pstEntry )
 {
-    DIRECTORYENTRY* pstRootEntry;
+    DIRECTORYENTRY* pstCurrentEntry;
     
     // 파일 시스템을 인식하지 못했거나 인덱스가 올바르지 않으면 실패
     if( ( gs_stFileSystemManager.bMounted == FALSE ) ||
@@ -874,11 +874,11 @@ static BOOL kSetDirectoryEntryData( int iIndex, DIRECTORYENTRY* pstEntry )
         return FALSE;
     }    
     
-    // 루트 디렉터리에 있는 해당 데이터를 갱신
-    pstRootEntry = ( DIRECTORYENTRY* ) gs_vbTempBuffer;
-    kMemCpy( pstRootEntry + iIndex, pstEntry, sizeof( DIRECTORYENTRY ) );
+    // 현재 디렉터리에 있는 해당 데이터를 갱신
+    pstCurrentEntry = ( DIRECTORYENTRY* ) gs_vbTempBuffer;
+    kMemCpy( pstCurrentEntry + iIndex, pstEntry, sizeof( DIRECTORYENTRY ) );
 
-    // 루트 디렉터리에 씀
+    // 현재 디렉터리에 씀
     if( kWriteCluster( currentClusterIndex, gs_vbTempBuffer ) == FALSE )
     {
         return FALSE;
