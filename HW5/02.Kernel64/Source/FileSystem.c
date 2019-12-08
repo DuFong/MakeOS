@@ -261,7 +261,6 @@ BOOL kFormat( void )
         kDiscardAllCacheBuffer( CACHE_DATAAREA );
     }
     kMount();
-    kSetDotInDirectory();
     // 동기화 처리
     kUnlock( &( gs_stFileSystemManager.stMutex ) );
 
@@ -272,16 +271,19 @@ BOOL kFormat( void )
 /** 
  * 디렉토리의 dot, dot dot 생성
  */
-void kSetDotInDirectory(){
+void kSetDotInDirectory(DWORD myClusterIndex){
     DIRECTORYENTRY stEntry;
     int iDirectoryEntryOffset = 0;
+    DWORD parentClusterIndex = currentClusterIndex;
+    kPrintf("\n current=%d, mycluster=%d \n", currentClusterIndex,myClusterIndex);
+    currentClusterIndex = myClusterIndex;
 
     // 디렉터리 엔트리를 설정
     kMemCpy( stEntry.vcFileName, ".", 2 );
-    stEntry.dwStartClusterIndex = -1;
+    stEntry.dwStartClusterIndex = myClusterIndex;
     stEntry.dwFileSize = 0;
     stEntry.flag=1;
-    stEntry.ParentDirectoryCluserIndex = 0;
+    stEntry.ParentDirectoryCluserIndex = parentClusterIndex;
     stEntry.ParentDirectoryPath[0] = '/';
     stEntry.ParentDirectoryPath[1] = '\0';
     
@@ -293,12 +295,13 @@ void kSetDotInDirectory(){
         return FALSE;
     }
 
+
      // 디렉터리 엔트리를 설정
     kMemCpy( stEntry.vcFileName, "..", 3 );
-    stEntry.dwStartClusterIndex = -2;
+    stEntry.dwStartClusterIndex = parentClusterIndex;
     stEntry.dwFileSize = 0;
     stEntry.flag=1;
-    stEntry.ParentDirectoryCluserIndex = 0;
+    stEntry.ParentDirectoryCluserIndex = parentClusterIndex;
     stEntry.ParentDirectoryPath[0] = '/';
     stEntry.ParentDirectoryPath[1] = '\0';
    
@@ -309,6 +312,8 @@ void kSetDotInDirectory(){
     {
         return FALSE;
     }
+    currentClusterIndex = parentClusterIndex;
+
 }
 
 
@@ -1073,7 +1078,7 @@ static BOOL kCreateDirectory( const char* pcFileName, DIRECTORYENTRY* pstEntry,
     pstEntry->flag=1;
     pstEntry->ParentDirectoryPath[0] = '/';
     pstEntry->ParentDirectoryPath[1] = '\0';
-    pstEntry->ParentDirectoryCluserIndex = 0;
+    pstEntry->ParentDirectoryCluserIndex = currentClusterIndex;
 
    
     // 디렉터리 엔트리를 등록
@@ -1084,7 +1089,7 @@ static BOOL kCreateDirectory( const char* pcFileName, DIRECTORYENTRY* pstEntry,
         return FALSE;
     }
 
-    kSetDotInDirectory();
+    kSetDotInDirectory(dwCluster);
 
     return TRUE;
 }
@@ -2176,7 +2181,16 @@ BOOL kCreateLoginFile()
         kSetClusterLinkData( LOGIN_CLUSTER_NUM, FILESYSTEM_FREECLUSTER );
         return FALSE;
     }
-    //kFlushFileSystemCache();
+    if( kReadCluster( 2, gs_vbTempBuffer ) == FALSE )
+    {
+        return -1;
+    }
+    DIRECTORYENTRY* dir = (DIRECTORYENTRY*) gs_vbTempBuffer;
+
+    kPrintf("\n\nprint admin %s = %d",dir[0].vcFileName ,dir[0].dwStartClusterIndex);
+    kPrintf("\n\nprint admin %s %d \n",dir[1].vcFileName ,dir[1].dwStartClusterIndex);
+
+    kFlushFileSystemCache();
     return TRUE;
 }
 

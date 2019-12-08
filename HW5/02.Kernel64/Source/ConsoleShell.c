@@ -1834,6 +1834,9 @@ static void kFormatHDD( const char* pcParameterBuffer )
         return ;
     }
     kPrintf( "HDD Format Success. After 3sec, System will reboot\n" );
+    currentDirectoryClusterIndex = 0;
+    kSetClusterIndex(currentDirectoryClusterIndex);
+    kSetDotInDirectory(0);
     kSleep(3000);
     kShutdown(NULL);
 }
@@ -2743,15 +2746,16 @@ static void kMoveDirectory( const char* pcParamegerBuffer){
     kGetFileSystemInformation( &stManager );
     
     directoryInfo = kFindDirectory(currentDirectoryClusterIndex);
+    kPrintf("\nindex call cd %d\n", currentDirectoryClusterIndex);
 
     if(kMemCmp(vcFileName, ".", 2) == 0){
-        currentDirectoryClusterIndex = directoryInfo[0].ParentDirectoryCluserIndex;
+        currentDirectoryClusterIndex = directoryInfo[0].dwStartClusterIndex;
         kSetClusterIndex(currentDirectoryClusterIndex);
         kMemCpy(path,directoryInfo[0].ParentDirectoryPath,kStrLen(directoryInfo[0].ParentDirectoryPath)+1);
      }
     else if(kMemCmp(vcFileName, "..", 3) == 0){
        
-        currentDirectoryClusterIndex = directoryInfo[1].ParentDirectoryCluserIndex;
+        currentDirectoryClusterIndex = directoryInfo[1].dwStartClusterIndex;
         kSetClusterIndex(currentDirectoryClusterIndex);        
         kMemCpy(path,directoryInfo[1].ParentDirectoryPath,kStrLen(directoryInfo[1].ParentDirectoryPath)+1);
      }   
@@ -2789,9 +2793,10 @@ static void kMoveDirectory( const char* pcParamegerBuffer){
                 kSetClusterIndex(currentDirectoryClusterIndex);
                 directoryInfo = NULL;
                 directoryInfo = kFindDirectory(currentDirectoryClusterIndex);
+                /*
                 if( directoryInfo[ 0 ].dwStartClusterIndex != -1 )
                 {
-                    kSetDotInDirectory();
+                    //kSetDotInDirectory();
                     kUpdateDirectory(0,".",path,currentDirectoryClusterIndex);
                 
                 }
@@ -2799,6 +2804,7 @@ static void kMoveDirectory( const char* pcParamegerBuffer){
                 directoryInfo[1].ParentDirectoryCluserIndex = temp_index;
                 kMemCpy(directoryInfo[1].ParentDirectoryPath,temp_path,kStrLen(temp_path) + 1);
                 kUpdateDirectory( 1, "..", temp_path, temp_index );
+                */
             
                 break;          
             }     
@@ -2854,7 +2860,8 @@ static void kShowDirectory( const char* pcParameterBuffer )
      
     for( i = 0 ; i < FILESYSTEM_MAXDIRECTORYENTRYCOUNT ; i++ )
     {
-        if( directoryInfo[ i ].dwStartClusterIndex != 0 )
+        if( directoryInfo[ i ].dwStartClusterIndex != 0 || 
+            kMemCmp(directoryInfo[i].vcFileName, ".",2)==0 || kMemCmp(directoryInfo[i].vcFileName, "..",3)==0 )
         {    
             pstEntry = &directoryInfo[i];
             // 전부 공백으로 초기화 한 후 각 위치에 값을 대입
