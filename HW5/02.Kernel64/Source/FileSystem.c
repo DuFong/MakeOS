@@ -2081,7 +2081,7 @@ BOOL kFlushFileSystemCache( void )
 
 
 // Login Function (Complete)
-BOOL kCheckLoginState( char * userName, char * password )
+BOOL kCheckLoginState( char * userName, char * password , DWORD * currentDirectoryClusterIndex)
 {
     LOGINENTRY* loginEntry;
     int idLength;
@@ -2111,6 +2111,7 @@ BOOL kCheckLoginState( char * userName, char * password )
         {
             if( kMemCmp( loginEntry[ i ].password, password, passLength ) == 0 ){
                 // correct !!
+                *currentDirectoryClusterIndex = loginEntry[i].dwStartClusterIndex;
                 return TRUE;
             }
         }
@@ -2170,14 +2171,21 @@ BOOL kWriteLoginEntryData( const char* newUserName, const char* newPassword )
 {
     int piLoginEntryIndex;
     LOGINENTRY pstEntry;
-    DWORD dwCluster = LOGIN_CLUSTER_NUM;
+    DWORD dwCluster;
     
     // 빈 Login 엔트리를 검색
     piLoginEntryIndex = kFindFreeLoginEntry();
     if( piLoginEntryIndex == -1 )
     {
         // 실패할 경우 할당 받은 클러스터를 반환해야 함
-        kSetClusterLinkData( dwCluster, FILESYSTEM_FREECLUSTER );
+        kSetClusterLinkData( LOGIN_CLUSTER_NUM, FILESYSTEM_FREECLUSTER );
+        return FALSE;
+    }
+
+    dwCluster = kFindFreeCluster();
+    if( ( dwCluster == FILESYSTEM_LASTCLUSTER ) ||
+        ( kSetClusterLinkData( dwCluster, FILESYSTEM_LASTCLUSTER ) == FALSE ) )
+    {
         return FALSE;
     }
     
