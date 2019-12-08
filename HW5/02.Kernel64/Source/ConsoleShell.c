@@ -131,6 +131,7 @@ void kLoginBeforeConsoleShell(){
                         kPringf("cluster index = %d\n", currentDirectoryClusterIndex);
                         kPrintf("Login success!\n"); 
                         kMemCpy(userName, inputID, inputIDindex);
+                        kSetClusterIndex(currentDirectoryClusterIndex);
                         return;
                     }
                     else
@@ -178,8 +179,6 @@ void kStartConsoleShell(){
     kPrintf(CONSOLESHELL_PROMPTMESSAGE);
     kPrintf(path);
     kPrintf(">");
-
-    kSetClusterIndex(currentDirectoryClusterIndex);
 
     while(1){
         bbKey = bKey;
@@ -1810,7 +1809,9 @@ static void kFormatHDD( const char* pcParameterBuffer )
         kPrintf( "HDD Format Fail\n" );
         return ;
     }
-    kPrintf( "HDD Format Success\n" );
+    kPrintf( "HDD Format Success. After 3sec, System will reboot\n" );
+    kSleep(3000);
+    kShutdown(NULL);
 }
 
 /**
@@ -2873,25 +2874,34 @@ static void kCreateAccount(const char* pcParameterBuffer){
     char vcPassword[FILESYSTEM_MAXPASSWORDLENGTH];
     char vcPasswordConfilm[FILESYSTEM_MAXPASSWORDLENGTH];
 
+    kMemSet(vcID, '\0', FILESYSTEM_MAXUSERNAMELENGTH);
     kPrintf("Enter your ID: ");
     kScanf(vcID, TRUE);
-    kPrintf("Enter your password: ");
-    kScanf(vcPassword, FALSE);
-    kPrintf("Enter your password again: ");
-    kScanf(vcPasswordConfilm, FALSE);
-    
-    // 비밀번호 확인 성공
-    if(kStrLen(vcPassword) == kStrLen(vcPasswordConfilm) && kMemCmp(vcPassword, vcPasswordConfilm, kStrLen(vcPassword)) == 0){
-        if(!kWriteLoginEntryData(vcID, vcPassword)){
-            kPrintf("Sorry, failed to create a new account");
-        }
+    while(TRUE){
+        kMemSet(vcPassword, '\0', FILESYSTEM_MAXPASSWORDLENGTH);
+        kMemSet(vcPasswordConfilm, '\0', FILESYSTEM_MAXPASSWORDLENGTH);
 
-        kFlushFileSystemCache();
-    }
-    // 비밀번호 실패
-    else{
+        kPrintf("Enter your password: ");
+        kScanf(vcPassword, FALSE);
+        kPrintf("Enter your password again: ");
+        kScanf(vcPasswordConfilm, FALSE);
         
-    }
+        // 비밀번호 확인 성공
+        if(kStrLen(vcPassword) == kStrLen(vcPasswordConfilm) && kMemCmp(vcPassword, vcPasswordConfilm, kStrLen(vcPassword)) == 0){
+            if(!kWriteLoginEntryData(vcID, vcPassword)){
+                kPrintf("Sorry, failed to create a new account.\n");
+                return;
+            }
+
+            kFlushFileSystemCache();
+            kPrintf("Success to create a new account [%s].\n", vcID);
+            return;
+        }
+        // 비밀번호 실패
+        else{
+            kPrintf("Password do not match. Please enter again.\n");
+        }
+    }  
 }
 
 /**
@@ -2964,33 +2974,3 @@ void kScreenSaverOff(){
     // 화면보호기 실행 전 화면 복구
     kMemCpy(CONSOLE_VIDEOMEMORYADDRESS, g_stScreenSaver.vcScreen, CONSOLE_WIDTH * CONSOLE_HEIGHT * 2);
 }
-
-static void kCreateUser( const char* pcParameterBuffer )
-{
-    PARAMETERLIST stList;
-    char vcFileName[ 50 ];
-    int iLength;
-    DWORD dwCluster;
-    int i;
-    FILE* pstFile;
-    
-    // 파라미터 리스트를 초기화하여 파일 이름을 추출
-    kInitializeParameter( &stList, pcParameterBuffer );
-    iLength = kGetNextParameter( &stList, vcFileName );
-    vcFileName[ iLength ] = '\0';
-    if( ( iLength > ( FILESYSTEM_MAXFILENAMELENGTH - 1 ) ) || ( iLength == 0 ) )
-    {
-        kPrintf( "Too Long or Too Short File Name\n" );
-        return ;
-    }
-
-    pstFile = fopen( vcFileName, "w" );
-    if( pstFile == NULL )
-    {
-        kPrintf( "File Create Fail\n" );
-        return;
-    }
-    fclose( pstFile );
-    kPrintf( "File Create Success\n" );
-}
-
