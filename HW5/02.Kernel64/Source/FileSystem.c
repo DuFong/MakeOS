@@ -2310,3 +2310,16 @@ BOOL kChangePassword(char* userName, char* inputpasswd){
     }
     return FALSE;
 }
+
+LOGINENTRY* kReadLogin(){
+    // 로그인 파일을 읽음
+    if( kReadCluster( LOGIN_CLUSTER_NUM, gs_vbTempBuffer ) == FALSE )
+    {
+        kPrintf("Fail!\n");
+        return;
+    }    
+    
+    // 로그인 디렉터리에 있는 해당 데이터를 갱신
+    
+    return gs_vbTempBuffer;;
+}
