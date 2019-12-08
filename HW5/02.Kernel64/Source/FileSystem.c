@@ -1074,8 +1074,8 @@ static BOOL kCreateDirectory( const char* pcFileName, DIRECTORYENTRY* pstEntry,
     pstEntry->ParentDirectoryPath[0] = '/';
     pstEntry->ParentDirectoryPath[1] = '\0';
     pstEntry->ParentDirectoryCluserIndex = 0;
+
    
-    
     // 디렉터리 엔트리를 등록
     if( kSetDirectoryEntryData( *piDirectoryEntryIndex, pstEntry ) == FALSE )
     {
@@ -1083,7 +1083,7 @@ static BOOL kCreateDirectory( const char* pcFileName, DIRECTORYENTRY* pstEntry,
         kSetClusterLinkData( dwCluster, FILESYSTEM_FREECLUSTER );
         return FALSE;
     }
-    
+
     kSetDotInDirectory();
 
     return TRUE;
@@ -1899,7 +1899,7 @@ DIR* kOpenDirectory( const char* pcDirectoryName )
     }
     
     // 루트 디렉터리를 읽음
-    if( kReadCluster( 0, ( BYTE* ) pstDirectoryBuffer ) == FALSE )
+    if( kReadCluster( currentClusterIndex, ( BYTE* ) pstDirectoryBuffer ) == FALSE )
     {
         // 실패하면 핸들과 메모리를 모두 반환해야 함
         kFreeFileDirectoryHandle( pstDirectory );
@@ -1909,12 +1909,12 @@ DIR* kOpenDirectory( const char* pcDirectoryName )
         kUnlock( &( gs_stFileSystemManager.stMutex ) );
         return NULL;
         
-    }
+    }    
     
     // 디렉터리 타입으로 설정하고 현재 디렉터리 엔트리의 오프셋을 초기화
     pstDirectory->bType = FILESYSTEM_TYPE_DIRECTORY;
     pstDirectory->stDirectoryHandle.iCurrentOffset = 0;
-    pstDirectory->stDirectoryHandle.pstDirectoryBuffer = pstDirectoryBuffer;
+    pstDirectory->stDirectoryHandle.pstDirectoryBuffer = pstDirectoryBuffer + iDirectoryEntryOffset;
 
     // 동기화
     kUnlock( &( gs_stFileSystemManager.stMutex ) );
@@ -2157,7 +2157,7 @@ BOOL kCreateLoginFile()
     kMemCpy( pstEntry.userName, "admin", 6 );
     kMemCpy( pstEntry.password, "1234", 5 );
     pstEntry.dwStartClusterIndex = userHome->stDirectoryHandle.pstDirectoryBuffer->dwStartClusterIndex;
-   
+       
     kCloseDirectory(userHome);
     
     // Login 엔트리를 등록

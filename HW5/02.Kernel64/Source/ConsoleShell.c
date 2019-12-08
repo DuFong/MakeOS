@@ -2757,9 +2757,9 @@ static void kMoveDirectory( const char* pcParamegerBuffer){
         for( int j = 0 ; j < FILESYSTEM_MAXDIRECTORYENTRYCOUNT ; j++ )
         {   //below folder's start cluster index != 0 && below folder's filename's strlen==filename && 
             if( directoryInfo[ j ].dwStartClusterIndex != 0 && kStrLen(directoryInfo[j].vcFileName) == 
-            kStrLen(vcFileName) && kMemCmp(directoryInfo[ j ].vcFileName,vcFileName,kStrLen(vcFileName))==0 
+            kStrLen(vcFileName) && kMemCmp(directoryInfo[ j ].vcFileName,vcFileName,kStrLen(vcFileName)+1)==0 
                 && directoryInfo[j].flag == 1)
-            {   //if you'r current directory is root
+            {   /*//if you'r current directory is root
                 if(currentDirectoryClusterIndex == 0)
                 {   //if you are not 'admin' and also folder(you want to move)is not your own user folder
                     //get out!
@@ -2768,7 +2768,8 @@ static void kMoveDirectory( const char* pcParamegerBuffer){
                         kPrintf("you cannot access to this folder\n");
                         break;
                     }
-                }                
+                }  
+                */             
 
                 //store currentpath and currentdircluster index in temp variable
                 kMemCpy(temp_path,path,kStrLen(path)+1);   
