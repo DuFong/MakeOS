@@ -229,17 +229,16 @@ BOOL kFormat( void )
     {
         // 루트 디렉터리(클러스터 0)는 이미 파일 시스템이 사용하고 있으므로,
         // 할당된 것으로 표시
-        if( i == 0 )
+        if( i == 0 || i == 1)
         {
             ( ( DWORD* ) ( gs_vbTempBuffer ) )[ 0 ] = FILESYSTEM_LASTCLUSTER;
-        }
-        else if(i == 1)
-        {
-            continue;
         }
         else
         {
             ( ( DWORD* ) ( gs_vbTempBuffer ) )[ 0 ] = FILESYSTEM_FREECLUSTER;
+        }
+        if((i > dwClusterLinkSectorCount + 7) && (i < dwClusterLinkSectorCount+16)){
+            continue;
         }
         
         // 1 섹터씩 씀
