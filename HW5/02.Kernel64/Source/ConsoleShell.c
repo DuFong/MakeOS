@@ -2740,7 +2740,7 @@ static void kMoveDirectory( const char* pcParamegerBuffer){
                 if(currentDirectoryClusterIndex == 0)
                 {   //if you are not 'admin' and also folder(you want to move)is not your own user folder
                     //get out!
-                    if ( (kGetUserLevel(userName) < 4) && (kMemcmp(vcFileName, userName, kStrLen(userName)) != 0) )
+                    if ( (kGetUserLevel(userName) > AUTH_LEVEL_ADMIN) && (kMemCmp(vcFileName, userName, kStrLen(userName)) != 0) )
                     {
                         kPrintf("you cannot access to this folder\n");
                         break;
