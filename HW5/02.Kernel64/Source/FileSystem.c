@@ -44,6 +44,7 @@ BOOL kInitializeFileSystem( void )
 
         // 캐시를 활성화함
         bCacheEnable = TRUE;
+
     }
     // 하드 디스크 초기화가 실패하면 8Mbyte 크기의 램 디스크를 생성
     else if( kInitializeRDD( RDD_TOTALSECTORCOUNT ) == TRUE )
@@ -122,6 +123,7 @@ BOOL kMount( void )
     {
         // 동기화 처리
         kUnlock( &( gs_stFileSystemManager.stMutex ) );
+        kPrintf("hhhhhhhhhhhhhhh");
         return FALSE;
     }
     
@@ -241,7 +243,6 @@ BOOL kFormat( void )
     }
 
     
-    kSetDotInDirectory();
 
     // 캐시 버퍼를 모두 버림
     if( gs_stFileSystemManager.bCacheEnable == TRUE )
@@ -723,6 +724,7 @@ static BOOL kSetClusterLinkData( DWORD dwClusterIndex, DWORD dwData )
     // 파일 시스템을 인식하지 못했으면 실패
     if( gs_stFileSystemManager.bMounted == FALSE )
     {
+        kPrintf("111");
         return FALSE;
     }
     
@@ -733,6 +735,7 @@ static BOOL kSetClusterLinkData( DWORD dwClusterIndex, DWORD dwData )
     // 해당 섹터를 읽어서 링크 정보를 설정한 후, 다시 저장
     if( kReadClusterLinkTable( dwSectorOffset, gs_vbTempBuffer ) == FALSE )
     {
+        kPrintf("222");
         return FALSE;
     }    
     
@@ -740,6 +743,7 @@ static BOOL kSetClusterLinkData( DWORD dwClusterIndex, DWORD dwData )
 
     if( kWriteClusterLinkTable( dwSectorOffset, gs_vbTempBuffer ) == FALSE )
     {
+        kPrintf("333");
         return FALSE;
     }
 
@@ -2068,9 +2072,8 @@ BOOL kFlushFileSystemCache( void )
 }
 
 
-// Login Function
-
-static BOOL kCheckLoginState( char * userName, char * password )
+// Login Function (Complete)
+BOOL kCheckLoginState( char * userName, char * password )
 {
     LOGINENTRY* loginEntry;
     int idLength;
@@ -2108,92 +2111,87 @@ static BOOL kCheckLoginState( char * userName, char * password )
     return FALSE;
 }
 
-static BOOL k( const char* pcFileName, DIRECTORYENTRY* pstEntry, 
-        int* piDirectoryEntryIndex )
+BOOL kCreateLoginFile()
 {
-    DWORD dwCluster;
+    DWORD dwCluster = LOGIN_CLUSTER_NUM;
+    int loginEntryIndex = 0;
+    LOGINENTRY* originEntry;
 
-    
-    // 빈 클러스터를 찾아서 할당된 것으로 설정
-    dwCluster = kFindFreeCluster();
-    if( ( dwCluster == FILESYSTEM_LASTCLUSTER ) ||
-        ( kSetClusterLinkData( dwCluster, FILESYSTEM_LASTCLUSTER ) == FALSE ) )
+    if( (dwCluster == FILESYSTEM_LASTCLUSTER ) ||
+        ( kSetClusterLinkData( dwCluster, FILESYSTEM_LASTCLUSTER ) == FALSE ))
     {
         return FALSE;
     }
 
-    // 빈 디렉터리 엔트리를 검색
-    *piDirectoryEntryIndex = kFindFreeDirectoryEntry();
-    if( *piDirectoryEntryIndex == -1 )
+    if( kReadCluster( LOGIN_CLUSTER_NUM, gs_vbTempBuffer ) == FALSE )
     {
-        // 실패할 경우 할당 받은 클러스터를 반환해야 함
-        kSetClusterLinkData( dwCluster, FILESYSTEM_FREECLUSTER );
-        return FALSE;
+        return -1;
     }
-    
-    // 디렉터리 엔트리를 설정
-    kMemCpy( pstEntry->vcFileName, pcFileName, kStrLen( pcFileName ) + 1 );
-    pstEntry->dwStartClusterIndex = dwCluster;
-    pstEntry->dwFileSize = 0;
-    pstEntry->flag = 0;
-    
-    // 디렉터리 엔트리를 등록
-    if( kSetDirectoryEntryData( *piDirectoryEntryIndex, pstEntry ) == FALSE )
-    {
-        // 실패할 경우 할당 받은 클러스터를 반환해야 함
-        kSetClusterLinkData( dwCluster, FILESYSTEM_FREECLUSTER );
-        return FALSE;
-    }
-    return TRUE;
-}
+    originEntry = (LOGINENTRY*) gs_vbTempBuffer;
+    kPrintf("%s", originEntry[0].userName);
 
-
-static BOOL kCreateLoginFile( const char* pcFileName, DIRECTORYENTRY* pstEntry, 
-        int* piDirectoryEntryIndex )
-{
-    DWORD dwCluster;
-    
-    // 빈 클러스터를 찾아서 할당된 것으로 설정
-    dwCluster = LOGIN_CLUSTER_NUM;
-    if( ( dwCluster == FILESYSTEM_LASTCLUSTER ) ||
-        ( kSetClusterLinkData( dwCluster, FILESYSTEM_LASTCLUSTER ) == FALSE ) )
-    {
-        return FALSE;
+    if(kMemCmp(originEntry[0].userName, "root/0", 5) == 0){
+        kPrintf("Already root is made");
+        return TRUE;
     }
+    else kPrintf("not exist root Make root");
 
-    // 빈 디렉터리 엔트리를 검색
-    *piDirectoryEntryIndex = kFindFreeDirectoryEntry();
-    if( *piDirectoryEntryIndex == -1 )
-    {
-        // 실패할 경우 할당 받은 클러스터를 반환해야 함
-        kSetClusterLinkData( dwCluster, FILESYSTEM_FREECLUSTER );
-        return FALSE;
-    }
+    LOGINENTRY pstEntry;
+    // 빈 Login 엔트리를 검색
+    //loginEntryIndex = kFindFreeLoginEntry();
     
-    // 디렉터리 엔트리를 설정
-    kMemCpy( pstEntry->vcFileName, pcFileName, kStrLen( pcFileName ) + 1 );
-    pstEntry->dwStartClusterIndex = dwCluster;
-    pstEntry->dwFileSize = 0;
-    pstEntry->flag=1;
-    pstEntry->ParentDirectoryPath[0] = '/';
-    pstEntry->ParentDirectoryPath[1] = '\0';
-    pstEntry->ParentDirectoryCluserIndex = 0;
+    // Login 엔트리를 설정
+    kMemCpy( pstEntry.userName, "root/0", 5 );
+    kMemCpy( pstEntry.password, "1234/0", 5 );
+    pstEntry.dwStartClusterIndex = 0;
    
     
-    // 디렉터리 엔트리를 등록
-    if( kSetDirectoryEntryData( *piDirectoryEntryIndex, pstEntry ) == FALSE )
+    // Login 엔트리를 등록
+    if( kSetLoginEntryData( loginEntryIndex, &pstEntry ) == FALSE )
+    {
+        // 실패할 경우 할당 받은 클러스터를 반환해야 함
+        kSetClusterLinkData( dwCluster, FILESYSTEM_FREECLUSTER );
+        return FALSE;
+    }
+    return TRUE;
+}
+
+// Add LoginEntry (Complete)
+BOOL kWriteLoginEntryData( const char* newUserName, const char* newPassword )
+{
+    int piLoginEntryIndex;
+    LOGINENTRY pstEntry;
+    DWORD dwCluster = LOGIN_CLUSTER_NUM;
+    
+    // 빈 Login 엔트리를 검색
+    piLoginEntryIndex = kFindFreeLoginEntry();
+    if( piLoginEntryIndex == -1 )
     {
         // 실패할 경우 할당 받은 클러스터를 반환해야 함
         kSetClusterLinkData( dwCluster, FILESYSTEM_FREECLUSTER );
         return FALSE;
     }
     
-    kSetDotInDirectory();
+    // Login 엔트리를 설정
+    kMemCpy( pstEntry.userName, newUserName, kStrLen( newUserName ) + 1 );
+    kMemCpy( pstEntry.password, newPassword, kStrLen( newPassword ) + 1 );
+    pstEntry.dwStartClusterIndex = dwCluster;
+   
+    
+    // Login 엔트리를 등록
+    if( kSetLoginEntryData( piLoginEntryIndex, &pstEntry ) == FALSE )
+    {
+        // 실패할 경우 할당 받은 클러스터를 반환해야 함
+        kSetClusterLinkData( dwCluster, FILESYSTEM_FREECLUSTER );
+        return FALSE;
+    }
+    
 
     return TRUE;
 }
 
-static int kFindFreeLoginEntry( void )
+// Find Empty LoginEntry index (Complete)
+int kFindFreeLoginEntry( void )
 {
     LOGINENTRY* pstEntry;
     int i;
@@ -2210,10 +2208,11 @@ static int kFindFreeLoginEntry( void )
         return -1;
     }
     
-    // 루트 디렉터리 안에서 루프를 돌면서 빈 엔트리, 즉 시작 클러스터 번호가 0인
+    // 루프를 돌면서 빈 엔트리, 즉 시작 클러스터 번호가 0인
     // 엔트리를 검색
-    pstEntry = ( DIRECTORYENTRY* ) gs_vbTempBuffer;
-    for( i = 0 ; i < FILESYSTEM_MAXDIRECTORYENTRYCOUNT ; i++ )
+    // i=1 -> root user fix
+    pstEntry = ( LOGINENTRY* ) gs_vbTempBuffer;
+    for( i = 1 ; i < FILESYSTEM_MAXLOGINENTRYCOUNT ; i++ )
     {
         if( pstEntry[ i ].dwStartClusterIndex == 0 )
         {
@@ -2221,4 +2220,34 @@ static int kFindFreeLoginEntry( void )
         }
     }
     return -1;
+}
+
+//  Attach new User to Entry (Complete)
+BOOL kSetLoginEntryData( int iIndex, LOGINENTRY* pstEntry )
+{
+    LOGINENTRY* pstLoginEntry;
+    
+    // 파일 시스템을 인식하지 못했거나 인덱스가 올바르지 않으면 실패
+    if( ( gs_stFileSystemManager.bMounted == FALSE ) ||
+        ( iIndex < 0 ) || ( iIndex >= FILESYSTEM_MAXLOGINENTRYCOUNT ) )
+    {
+        return FALSE;
+    }
+
+    //  LoginFile를 읽음
+    if( kReadCluster( LOGIN_CLUSTER_NUM, gs_vbTempBuffer ) == FALSE )
+    {
+        return FALSE;
+    }    
+    
+    // LoginFile에 있는 해당 데이터를 갱신
+    pstLoginEntry = ( LOGINENTRY* ) gs_vbTempBuffer;
+    kMemCpy( pstLoginEntry + iIndex, pstEntry, sizeof( LOGINENTRY ) );
+
+    // LoginFile에 씀
+    if( kWriteCluster( LOGIN_CLUSTER_NUM, gs_vbTempBuffer ) == FALSE )
+    {
+        return FALSE;
+    }    
+    return TRUE;
 }

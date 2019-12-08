@@ -90,9 +90,12 @@ void kStartConsoleShell(){
 
     ///////////////////////////////////////////////////////////////
     int checkID = 0;
-    char inputID[10] = {
+    char inputID[14] = {
         '\0',
     };
+    if(!kCreateLoginFile()){
+        kPrintf("Create Root Fail");
+    }
     int inputIDindex = 0;
     char tmpID[5] = {'a', 'b', 'c', '\0'};
     char tmpPW[8] = {'1', '2', '3', '4', '\0'};
@@ -128,7 +131,8 @@ void kStartConsoleShell(){
                 }
                 else if (checkID == 1)
                 {
-                    if (kCheckLoginState( inputID, vcCommandBuffer ))
+                    if ((kMemCmp(tmpID, inputID, inputIDindex) == 0) && (kMemCmp(tmpPW, vcCommandBuffer, iCommandBufferIndex)==0))
+                    //if (kCheckLoginState( inputID, vcCommandBuffer ))
                     {
                         kPrintf("Login success!\n");
                         kMemSet(vcCommandBuffer, '\0', CONSOLESHELL_MAXCOMMANDBUFFERCOUNT);
@@ -141,6 +145,7 @@ void kStartConsoleShell(){
                         kPrintf("please enter your id : ");
                         checkID = 0;
                         kMemSet(vcCommandBuffer, '\0', CONSOLESHELL_MAXCOMMANDBUFFERCOUNT);
+                        kMemSet(inputID, '\0', 14);
                         iCommandBufferIndex = 0;
                         continue;
                     }
