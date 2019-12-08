@@ -2157,7 +2157,10 @@ BOOL kCreateLoginFile()
     kMemCpy( pstEntry.userName, "admin", 6 );
     kMemCpy( pstEntry.password, "1234", 5 );
     pstEntry.dwStartClusterIndex = userHome->stDirectoryHandle.pstDirectoryBuffer->dwStartClusterIndex;
-       
+
+    // Set User Level
+    pstEntry.userLevel = AUTH_LEVEL_ADMIN;
+
     kCloseDirectory(userHome);
     
     // Login 엔트리를 등록
@@ -2215,6 +2218,7 @@ BOOL kWriteLoginEntryData( const char* newUserName, const char* newPassword )
     // Login 엔트리를 설정
     kMemCpy( pstEntry.userName, newUserName, kStrLen( newUserName ) + 1 );
     kMemCpy( pstEntry.password, newPassword, kStrLen( newPassword ) + 1 );
+    pstEntry.userLevel = AUTH_LEVEL_MEDIUM;
     pstEntry.dwStartClusterIndex = userHome->stDirectoryHandle.pstDirectoryBuffer->dwStartClusterIndex;
 
     kCloseDirectory(userHome);
