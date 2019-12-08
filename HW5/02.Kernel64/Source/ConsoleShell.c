@@ -2950,25 +2950,34 @@ static void kCreateAccount(const char* pcParameterBuffer){
     char vcPassword[FILESYSTEM_MAXPASSWORDLENGTH];
     char vcPasswordConfilm[FILESYSTEM_MAXPASSWORDLENGTH];
 
+    kMemSet(vcID, '\0', FILESYSTEM_MAXUSERNAMELENGTH);
     kPrintf("Enter your ID: ");
     kScanf(vcID, TRUE);
-    kPrintf("Enter your password: ");
-    kScanf(vcPassword, FALSE);
-    kPrintf("Enter your password again: ");
-    kScanf(vcPasswordConfilm, FALSE);
-    
-    // 비밀번호 확인 성공
-    if(kStrLen(vcPassword) == kStrLen(vcPasswordConfilm) && kMemCmp(vcPassword, vcPasswordConfilm, kStrLen(vcPassword)) == 0){
-        if(!kWriteLoginEntryData(vcID, vcPassword)){
-            kPrintf("Sorry, failed to create a new account");
-        }
+    while(TRUE){
+        kMemSet(vcPassword, '\0', FILESYSTEM_MAXPASSWORDLENGTH);
+        kMemSet(vcPasswordConfilm, '\0', FILESYSTEM_MAXPASSWORDLENGTH);
 
-        kFlushFileSystemCache();
-    }
-    // 비밀번호 실패
-    else{
+        kPrintf("Enter your password: ");
+        kScanf(vcPassword, FALSE);
+        kPrintf("Enter your password again: ");
+        kScanf(vcPasswordConfilm, FALSE);
         
-    }
+        // 비밀번호 확인 성공
+        if(kStrLen(vcPassword) == kStrLen(vcPasswordConfilm) && kMemCmp(vcPassword, vcPasswordConfilm, kStrLen(vcPassword)) == 0){
+            if(!kWriteLoginEntryData(vcID, vcPassword)){
+                kPrintf("Sorry, failed to create a new account");
+                return;
+            }
+
+            kFlushFileSystemCache();
+            kPrintf("Success to create a new account [%s].\n", vcID);
+            return;
+        }
+        // 비밀번호 실패
+        else{
+            kPrintf("Password do not match. Please enter again.\n");
+        }
+    }  
 }
 
 /**
