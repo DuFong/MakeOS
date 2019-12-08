@@ -2325,3 +2325,29 @@ LOGINENTRY* kReadLogin(){
     
     return gs_vbTempBuffer;;
 }
+
+int kGetUserLevel(char* userName){
+    LOGINENTRY* loginEntry;
+    int nameLength, level;
+    
+    //  LoginFile를 읽음
+    if( kReadCluster( LOGIN_CLUSTER_NUM, gs_vbTempBuffer ) == FALSE )
+    {
+        return FALSE;
+    }    
+    // 루트 디렉터리에 있는 해당 데이터를 갱신
+    loginEntry = ( LOGINENTRY* ) gs_vbTempBuffer;
+
+    // userName과 같은 엔트리를 찾은 후 level return
+    nameLength = kStrLen( userName );
+
+    for( int i = 0 ; i < FILESYSTEM_MAXLOGINENTRYCOUNT ; i++ )
+    {
+        if( kMemCmp( loginEntry[ i ].userName, userName, nameLength ) == 0 )
+        {
+            level = loginEntry[i].userLevel;
+            break;
+        }
+    }
+    return level;
+}
