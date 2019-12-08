@@ -1807,7 +1807,9 @@ static void kFormatHDD( const char* pcParameterBuffer )
         kPrintf( "HDD Format Fail\n" );
         return ;
     }
-    kPrintf( "HDD Format Success\n" );
+    kPrintf( "HDD Format Success. After 3sec, System will reboot\n" );
+    kSleep(3000);
+    kShutdown(NULL);
 }
 
 /**
@@ -2873,7 +2875,7 @@ static void kCreateAccount(const char* pcParameterBuffer){
         // 비밀번호 확인 성공
         if(kStrLen(vcPassword) == kStrLen(vcPasswordConfilm) && kMemCmp(vcPassword, vcPasswordConfilm, kStrLen(vcPassword)) == 0){
             if(!kWriteLoginEntryData(vcID, vcPassword)){
-                kPrintf("Sorry, failed to create a new account");
+                kPrintf("Sorry, failed to create a new account.\n");
                 return;
             }
 
