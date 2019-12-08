@@ -217,7 +217,7 @@ BOOL kFormat( void )
     
     // MBR 이후부터 루트 디렉터리까지 모두 0으로 초기화
     kMemSet( gs_vbTempBuffer, 0, 512 );
-    for( i = 0 ; i < ( dwClusterLinkSectorCount + FILESYSTEM_SECTORSPERCLUSTER );
+    for( i = 0 ; i < ( dwClusterLinkSectorCount + (FILESYSTEM_SECTORSPERCLUSTER *dwClsuterCount));
          i++ )
     {
         // 루트 디렉터리(클러스터 0)는 이미 파일 시스템이 사용하고 있으므로,
@@ -225,6 +225,10 @@ BOOL kFormat( void )
         if( i == 0 )
         {
             ( ( DWORD* ) ( gs_vbTempBuffer ) )[ 0 ] = FILESYSTEM_LASTCLUSTER;
+        }
+        else if(i == 1)
+        {
+            continue;
         }
         else
         {
@@ -240,7 +244,7 @@ BOOL kFormat( void )
         }
     }
     
-    kSetDotInDirectory();
+    
 
     // 캐시 버퍼를 모두 버림
     if( gs_stFileSystemManager.bCacheEnable == TRUE )
@@ -248,9 +252,11 @@ BOOL kFormat( void )
         kDiscardAllCacheBuffer( CACHE_CLUSTERLINKTABLEAREA );
         kDiscardAllCacheBuffer( CACHE_DATAAREA );
     }
-    
+    kSetDotInDirectory();
     // 동기화 처리
     kUnlock( &( gs_stFileSystemManager.stMutex ) );
+
+    
     return TRUE;
 }
 

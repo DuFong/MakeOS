@@ -116,7 +116,8 @@ void kLoginBeforeConsoleShell(){
                 }
                 else if (checkID == 1)
                 {
-                    if ((kMemCmp(tmpID, inputID, inputIDindex) == 0) && (kMemCmp(tmpPW, vcCommandBuffer, iCommandBufferIndex)==0))
+                    if ( 
+                        (kMemCmp(tmpID, inputID, inputIDindex) == 0) && (kMemCmp(tmpPW, vcCommandBuffer, iCommandBufferIndex)==0))
                     //if (kCheckLoginState( inputID, vcCommandBuffer ))
                     {
                         kPrintf("Login success!\n");                       
