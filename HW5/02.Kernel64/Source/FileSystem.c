@@ -603,7 +603,7 @@ static BOOL kInternalReadClusterWithCache( DWORD dwOffset, BYTE* pbBuffer )
 /**
  *  데이터 영역의 오프셋에 한 클러스터를 씀
  */
-static BOOL kWriteCluster( DWORD dwOffset, BYTE* pbBuffer )
+BOOL kWriteCluster( DWORD dwOffset, BYTE* pbBuffer )
 {
     // 캐시 여부에 따라 다른 쓰기 함수 호출
     if( gs_stFileSystemManager.bCacheEnable == FALSE )
