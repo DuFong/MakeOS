@@ -129,6 +129,7 @@ void kLoginBeforeConsoleShell(){
                     {
                         kPrintf("Login success!\n"); 
                         kMemCpy(userName, inputID, inputIDindex);
+                        kSetClusterIndex(currentDirectoryClusterIndex);
                         return;
                     }
                     else
@@ -176,8 +177,6 @@ void kStartConsoleShell(){
     kPrintf(CONSOLESHELL_PROMPTMESSAGE);
     kPrintf(path);
     kPrintf(">");
-
-    kSetClusterIndex(currentDirectoryClusterIndex);
 
     while(1){
         bbKey = bKey;

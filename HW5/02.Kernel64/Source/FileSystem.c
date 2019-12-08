@@ -161,6 +161,8 @@ BOOL kFormat( void )
     DWORD dwClusterLinkSectorCount;
     DWORD i;
     
+    kFlushFileSystemCache();
+    
     // 동기화 처리
     kLock( &( gs_stFileSystemManager.stMutex ) );
 
