@@ -56,6 +56,7 @@ SHELLCOMMANDENTRY gs_vstCommandTable[] = {
     { "cd", "Move Directory, ex) cd folder", kMoveDirectory},
     { "rmdir", "Remove emptyed Directory ex) rmdir folder", kRemoveDirectory},
     { "createaccount", "Create New Account", kCreateAccount},
+    { "changepasswd", "Change User's Password", kChangePasswd},
 };
 
 char historyCommand[10][100];
@@ -68,6 +69,8 @@ scrollDownPointer = 0;
 
 char path[100] = "/";
 DWORD currentDirectoryClusterIndex = 0;
+char userName[FILESYSTEM_MAXUSERNAMELENGTH];
+
 
 void kLoginBeforeConsoleShell(){
 
@@ -77,7 +80,7 @@ void kLoginBeforeConsoleShell(){
     int iCursorX, iCursorY;
 
     int checkID = 0;
-    char inputID[10] = {
+    char inputID[14] = {
         '\0',
     };
     int inputIDindex = 0;
@@ -120,7 +123,8 @@ void kLoginBeforeConsoleShell(){
                         (kMemCmp(tmpID, inputID, inputIDindex) == 0) && (kMemCmp(tmpPW, vcCommandBuffer, iCommandBufferIndex)==0))
                     //if (kCheckLoginState( inputID, vcCommandBuffer ))
                     {
-                        kPrintf("Login success!\n");                       
+                        kPrintf("Login success!\n"); 
+                        kMemCpy(userName, inputID, inputIDindex);
                         return;
                     }
                     else
@@ -128,6 +132,7 @@ void kLoginBeforeConsoleShell(){
                         kPrintf("wrong id or password. try again\n");
                         kPrintf("please enter your id : ");
                         checkID = 0;
+                        kMemSet(inputID, '\0', 14);
                         kMemSet(vcCommandBuffer, '\0', CONSOLESHELL_MAXCOMMANDBUFFERCOUNT);
                         iCommandBufferIndex = 0;
                         continue;
@@ -175,6 +180,9 @@ void kStartConsoleShell(){
     char inputID[10] = {
         '\0',
     };
+    if(!kCreateLoginFile()){
+        kPrintf("Create Root Fail");
+    }
     int inputIDindex = 0;
     char tmpID[5] = {'a', 'b', 'c', '\0'};
     char tmpPW[8] = {'1', '2', '3', '4', '\0'};
@@ -210,6 +218,7 @@ void kStartConsoleShell(){
                 }
                 else if (checkID == 1)
                 {
+
                     if ((kMemCmp(tmpID, inputID, inputIDindex) == 0) && (kMemCmp(tmpPW, vcCommandBuffer, iCommandBufferIndex) == 0))
                     //if (kCheckLoginState( inputID, vcCommandBuffer ))
                     {
@@ -224,6 +233,7 @@ void kStartConsoleShell(){
                         kPrintf("please enter your id : ");
                         checkID = 0;
                         kMemSet(vcCommandBuffer, '\0', CONSOLESHELL_MAXCOMMANDBUFFERCOUNT);
+                        kMemSet(inputID, '\0', 14);
                         iCommandBufferIndex = 0;
                         continue;
                     }
@@ -2876,7 +2886,26 @@ static void kCreateAccount(const char* pcParameterBuffer){
     
     // 비밀번호 확인 성공
     if(kStrLen(vcPassword) == kStrLen(vcPasswordConfilm) && kMemCmp(vcPassword, vcPasswordConfilm, kStrLen(vcPassword)) == 0){
-        //kWriteLoginEntryData(vcID, vcPassword);
+        if(!kWriteLoginEntryData(vcID, vcPassword)){
+            kPrintf("Sorry, failed to create a new account");
+        }
+    }
+}
+
+/**
+ * 계정 비밀번호 변경
+ */
+static void kChangePasswd( const char* pcParameterBuffer ){
+    char vcPassword[FILESYSTEM_MAXPASSWORDLENGTH];
+
+    kPrintf("Enter your password: ");
+    kScanf(vcPassword, FALSE);
+
+    if(kChangePassword(userName, vcPassword)){
+        kPrintf("Change Password Success !!");
+    }
+    else{
+        kPrintf("Change Password Fail :(");
     }
 }
 
