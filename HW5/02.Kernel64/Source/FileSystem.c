@@ -260,8 +260,8 @@ BOOL kFormat( void )
         kDiscardAllCacheBuffer( CACHE_CLUSTERLINKTABLEAREA );
         kDiscardAllCacheBuffer( CACHE_DATAAREA );
     }
-    kSetDotInDirectory();
     kMount();
+    kSetDotInDirectory();
     // 동기화 처리
     kUnlock( &( gs_stFileSystemManager.stMutex ) );
 
@@ -817,7 +817,7 @@ static int kFindFreeDirectoryEntry( void )
     // 루트 디렉터리 안에서 루프를 돌면서 빈 엔트리, 즉 시작 클러스터 번호가 0인
     // 엔트리를 검색
     pstEntry = ( DIRECTORYENTRY* ) gs_vbTempBuffer;
-    for( i = 0 ; i < FILESYSTEM_MAXDIRECTORYENTRYCOUNT ; i++ )
+    for( i = 2 ; i < FILESYSTEM_MAXDIRECTORYENTRYCOUNT ; i++ )
     {
         if( pstEntry[ i ].dwStartClusterIndex == 0 )
         {
@@ -2124,13 +2124,12 @@ BOOL kCheckLoginState( char * userName, char * password , DWORD * currentDirecto
 
 BOOL kCreateLoginFile()
 {
-    DWORD dwCluster = LOGIN_CLUSTER_NUM;
     int loginEntryIndex = 0;
     LOGINENTRY* originEntry;
     DIR* userHome;
 
-    if( (dwCluster == FILESYSTEM_LASTCLUSTER ) ||
-        ( kSetClusterLinkData( dwCluster, FILESYSTEM_LASTCLUSTER ) == FALSE ))
+    if( (LOGIN_CLUSTER_NUM == FILESYSTEM_LASTCLUSTER ) ||
+        ( kSetClusterLinkData( LOGIN_CLUSTER_NUM, FILESYSTEM_LASTCLUSTER ) == FALSE ))
     {
         return FALSE;
     }
@@ -2166,10 +2165,10 @@ BOOL kCreateLoginFile()
     if( kSetLoginEntryData( loginEntryIndex, &pstEntry ) == FALSE )
     {
         // 실패할 경우 할당 받은 클러스터를 반환해야 함
-        kSetClusterLinkData( dwCluster, FILESYSTEM_FREECLUSTER );
+        kSetClusterLinkData( LOGIN_CLUSTER_NUM, FILESYSTEM_FREECLUSTER );
         return FALSE;
     }
-    kFlushFileSystemCache();
+    //kFlushFileSystemCache();
     return TRUE;
 }
 
