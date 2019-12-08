@@ -82,18 +82,41 @@ void kLoginBeforeConsoleShell(){
     int iCursorX, iCursorY;
 
     int checkID = 0;
-    char inputID[14] = {
-        '\0',
-    };
+    char inputID[14] = {'\0',};
+    char inputPW[14] = {'\0',};
     int inputIDindex = 0;
-    char tmpID[5] = {'a', 'b', 'c', '\0'};
-    char tmpPW[8] = {'1', '2', '3', '4', '\0'};
+ 
     if(!kCreateLoginFile()){
         kPrintf("Create Root Fail");
     }
-    kPrintf("please enter your id : ");
 
-    while (1)
+    while(1){
+        kPrintf("please enter your id : ");
+        kScanf(inputID, TRUE);
+
+        kPrintf("Enter your password: ");
+        kScanf(inputPW, FALSE);
+
+        if (kCheckLoginState( inputID, inputPW , &currentDirectoryClusterIndex ))
+        {           
+            kPrintf("cluster index = %d\n", currentDirectoryClusterIndex);
+            kPrintf("Login success!\n"); 
+            kMemCpy(userName, inputID, inputIDindex);
+            kSetClusterIndex(currentDirectoryClusterIndex);
+            return;
+        }
+        // 비밀번호 실패
+        else{
+            kPrintf("wrong id or password. try again\n");
+            
+            kMemSet(inputID, '\0', 14);
+            kMemSet(inputPW, '\0', 14);
+            continue;
+        }
+    }
+    
+
+    /*while (1)
     {
         bKey = kGetCh();
 
@@ -159,7 +182,7 @@ void kLoginBeforeConsoleShell(){
                 kPrintf("%c", bKey);
             }
         }
-    }
+    }*/
 }
 
 // 셸의 메인 루프
@@ -2740,13 +2763,12 @@ static void kMoveDirectory( const char* pcParamegerBuffer){
                 if(currentDirectoryClusterIndex == 0)
                 {   //if you are not 'admin' and also folder(you want to move)is not your own user folder
                     //get out!
-                    if ( (kGetUserLevel(userName) < 4) && (kMemcmp(vcFileName, userName, kStrLen(userName)) != 0) )
+                    if ( (kGetUserLevel(userName) < 4) && (kMemCmp(vcFileName, userName, kStrLen(userName)) != 0) )
                     {
                         kPrintf("you cannot access to this folder\n");
                         break;
                     }
-                }
-                
+                }                
 
                 //store currentpath and currentdircluster index in temp variable
                 kMemCpy(temp_path,path,kStrLen(path)+1);   
