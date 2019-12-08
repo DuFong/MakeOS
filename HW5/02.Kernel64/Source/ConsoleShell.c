@@ -86,6 +86,9 @@ void kLoginBeforeConsoleShell(){
     int inputIDindex = 0;
     char tmpID[5] = {'a', 'b', 'c', '\0'};
     char tmpPW[8] = {'1', '2', '3', '4', '\0'};
+    if(!kCreateLoginFile()){
+        kPrintf("Create Root Fail");
+    }
     kPrintf("please enter your id : ");
 
     while (1)

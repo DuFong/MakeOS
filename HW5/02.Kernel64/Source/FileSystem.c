@@ -123,7 +123,6 @@ BOOL kMount( void )
     {
         // 동기화 처리
         kUnlock( &( gs_stFileSystemManager.stMutex ) );
-        kPrintf("hhhhhhhhhhhhhhh");
         return FALSE;
     }
     
@@ -729,7 +728,6 @@ static BOOL kSetClusterLinkData( DWORD dwClusterIndex, DWORD dwData )
     // 파일 시스템을 인식하지 못했으면 실패
     if( gs_stFileSystemManager.bMounted == FALSE )
     {
-        kPrintf("111");
         return FALSE;
     }
     
@@ -740,7 +738,6 @@ static BOOL kSetClusterLinkData( DWORD dwClusterIndex, DWORD dwData )
     // 해당 섹터를 읽어서 링크 정보를 설정한 후, 다시 저장
     if( kReadClusterLinkTable( dwSectorOffset, gs_vbTempBuffer ) == FALSE )
     {
-        kPrintf("222");
         return FALSE;
     }    
     
@@ -748,7 +745,6 @@ static BOOL kSetClusterLinkData( DWORD dwClusterIndex, DWORD dwData )
 
     if( kWriteClusterLinkTable( dwSectorOffset, gs_vbTempBuffer ) == FALSE )
     {
-        kPrintf("333");
         return FALSE;
     }
 
@@ -2133,13 +2129,13 @@ BOOL kCreateLoginFile()
         return -1;
     }
     originEntry = (LOGINENTRY*) gs_vbTempBuffer;
-    kPrintf("%s", originEntry[0].userName);
+    kPrintf("%s\n", originEntry[0].userName);
 
     if(kMemCmp(originEntry[0].userName, "root/0", 5) == 0){
-        kPrintf("Already root is made");
+        kPrintf("Already root is made\n");
         return TRUE;
     }
-    else kPrintf("not exist root Make root");
+    else kPrintf("not exist root Make root\n");
 
     LOGINENTRY pstEntry;
     // 빈 Login 엔트리를 검색
