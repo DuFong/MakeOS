@@ -87,6 +87,9 @@ void kLoginBeforeConsoleShell(){
     int inputIDindex = 0;
     char tmpID[5] = {'a', 'b', 'c', '\0'};
     char tmpPW[8] = {'1', '2', '3', '4', '\0'};
+    if(!kCreateLoginFile()){
+        kPrintf("Create Root Fail");
+    }
     kPrintf("please enter your id : ");
 
     while (1)
@@ -120,9 +123,8 @@ void kLoginBeforeConsoleShell(){
                 }
                 else if (checkID == 1)
                 {
-                    if ( 
-                        (kMemCmp(tmpID, inputID, inputIDindex) == 0) && (kMemCmp(tmpPW, vcCommandBuffer, iCommandBufferIndex)==0))
-                    //if (kCheckLoginState( inputID, vcCommandBuffer ))
+                    //if ((kMemCmp(tmpID, inputID, inputIDindex) == 0) && (kMemCmp(tmpPW, vcCommandBuffer, iCommandBufferIndex)==0))
+                    if (kCheckLoginState( inputID, vcCommandBuffer , &currentDirectoryClusterIndex ))
                     {
                         kPrintf("Login success!\n"); 
                         kMemCpy(userName, inputID, inputIDindex);
