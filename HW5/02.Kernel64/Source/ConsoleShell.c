@@ -36,6 +36,7 @@ SHELLCOMMANDENTRY gs_vstCommandTable[] = {
     {"prioritytask", "Create tasks with different priority", kPriorityTask},
     {"setscreentimer", "Set screen saver time, ex)setscreentimer 30(seconds)", kSetScreenTimer},
     { "dynamicmeminfo", "Show Dyanmic Memory Information", kShowDyanmicMemoryInformation },
+    { "`", "Change Cache State", kChangeCacheState},
     { "testseqalloc", "Test Sequential Allocation & Free", kTestSequentialAllocation },
     { "testranalloc", "Test Random Allocation & Free", kTestRandomAllocation },
     { "hddinfo", "Show HDD Information", kShowHDDInformation },
@@ -2994,6 +2995,10 @@ static void kChangePath(int i, char* vcDirectoryName, DWORD dwParentDirectoryClu
         vcTemp[0] = '/';
         kMemCpy(path, vcTemp, 2);
     }
+}
+
+static void kChangeCacheState(){
+    kChangeCacheEnable();
 }
 
 

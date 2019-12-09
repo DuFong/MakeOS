@@ -315,5 +315,6 @@ static BOOL kCreateDirectory( const char* pcFileName, DIRECTORYENTRY* pstEntry,
 BOOL kChangePassword(char* userName, char* inputpasswd);
 LOGINENTRY* kReadLogin(void);
 static BOOL kChangeLevel( const char* pcParameterBuffer);
+void kChangeCacheEnable();
 
 #endif /*__FILESYSTEM_H__*/
