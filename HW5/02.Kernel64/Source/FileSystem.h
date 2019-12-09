@@ -81,14 +81,12 @@ typedef int (* fWriteHDDSector ) ( BOOL bPrimary, BOOL bMaster, DWORD dwLBA,
 
 /*  권한에 관련된 매크로 정의 */
 
-// 권한 레벨의 수
-#define AUTH_MAXLEVELCOUNT  4
-
 // 권한의 레벨 등급
 #define AUTH_LEVEL_ADMIN              0
 #define AUTH_LEVEL_HIGH               1
 #define AUTH_LEVEL_MEDIUM             2
 #define AUTH_LEVEL_LOW                3
+#define AUTH_LEVEL_SHARE              4
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -153,6 +151,9 @@ typedef struct kDirectoryEntryStruct
     //부모 디렉터리 표시
     char ParentDirectoryPath[FILESYSTEM_MAXFILENAMELENGTH];
     DWORD ParentDirectoryCluserIndex;
+
+    // 파일 또는 디렉토리의 권한(level)
+    int objectLevel;
 } DIRECTORYENTRY;
 
 // Login Entry Structure

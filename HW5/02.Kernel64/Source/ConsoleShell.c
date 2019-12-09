@@ -72,7 +72,7 @@ scrollDownPointer = 0;
 
 char path[100] = "/";
 DWORD currentDirectoryClusterIndex = 0;
-char userName[FILESYSTEM_MAXUSERNAMELENGTH];
+char exUserName[FILESYSTEM_MAXUSERNAMELENGTH];
 
 
 void kLoginBeforeConsoleShell(){
@@ -86,6 +86,9 @@ void kLoginBeforeConsoleShell(){
     char inputID[14] = {'\0',};
     char inputPW[14] = {'\0',};
     int inputIDindex = 0;
+
+    char vcNameBuffer[FILESYSTEM_MAXUSERNAMELENGTH];
+    int iNameBufferIndex = 0;
  
     if(!kCreateLoginFile()){
         kPrintf("Create Root Fail");
@@ -102,9 +105,10 @@ void kLoginBeforeConsoleShell(){
         {           
             kPrintf("cluster index = %d\n", currentDirectoryClusterIndex);
             kPrintf("Login success!\n"); 
-            kMemCpy(userName, inputID, kStrLen(inputID));
+            kMemCpy(exUserName, inputID, kStrLen(inputID)+1);
+
             kSetClusterIndex(currentDirectoryClusterIndex);
-            kMemCpy(path + 1, userName, kStrLen(userName));
+            kMemCpy(path + 1, exUserName, kStrLen(exUserName)+1);
             return;
         }
         // 비밀번호 실패
@@ -117,74 +121,6 @@ void kLoginBeforeConsoleShell(){
         }
     }
     
-
-    /*while (1)
-    {
-        bKey = kGetCh();
-
-        if (bKey == KEY_BACKSPACE)
-        {
-            if (iCommandBufferIndex > 0)
-            {
-                kGetCursor(&iCursorX, &iCursorY);
-                kPrintStringXY(iCursorX - 1, iCursorY, " ");
-                kSetCursor(iCursorX - 1, iCursorY);
-                iCommandBufferIndex--;
-            }
-        }
-        else if (bKey == KEY_ENTER)
-        {
-            kPrintf("\n");
-            if (iCommandBufferIndex > 0)
-            {
-                vcCommandBuffer[iCommandBufferIndex] = '\0';
-                if (checkID == 0)
-                { //when id checking needed
-                    kMemCpy(inputID, vcCommandBuffer, iCommandBufferIndex);
-                    inputIDindex = iCommandBufferIndex;
-                    checkID = 1;
-                    kMemSet(vcCommandBuffer, '\0', CONSOLESHELL_MAXCOMMANDBUFFERCOUNT);
-                        iCommandBufferIndex = 0;
-                    kPrintf("enter your password : ");
-                }
-                else if (checkID == 1)
-                {
-                    //if ((kMemCmp(tmpID, inputID, inputIDindex) == 0) && (kMemCmp(tmpPW, vcCommandBuffer, iCommandBufferIndex)==0))
-                    if (kCheckLoginState( inputID, vcCommandBuffer , &currentDirectoryClusterIndex ))
-
-                    {
-                        kPringf("cluster index = %d\n", currentDirectoryClusterIndex);
-                        kPrintf("Login success!\n"); 
-                        kMemCpy(userName, inputID, inputIDindex);
-                        kSetClusterIndex(currentDirectoryClusterIndex);
-                        return;
-                    }
-                    else
-                    {
-                        kPrintf("wrong id or password. try again\n");
-                        kPrintf("please enter your id : ");
-                        checkID = 0;
-                        kMemSet(inputID, '\0', 14);
-                        kMemSet(vcCommandBuffer, '\0', CONSOLESHELL_MAXCOMMANDBUFFERCOUNT);
-                        iCommandBufferIndex = 0;
-                        continue;
-                    }
-                }
-            }
-        }
-        else if ((bKey == KEY_LSHIFT) || (bKey == KEY_RSHIFT) || (bKey == KEY_CAPSLOCK) || (bKey == KEY_NUMLOCK) || (bKey == KEY_SCROLLLOCK))
-        {
-            ;
-        }
-        else
-        {            
-            if (iCommandBufferIndex < CONSOLESHELL_MAXCOMMANDBUFFERCOUNT)
-            {
-                vcCommandBuffer[iCommandBufferIndex++] = bKey;
-                kPrintf("%c", bKey);
-            }
-        }
-    }*/
 }
 
 // 셸의 메인 루프
@@ -1900,7 +1836,7 @@ static void kDeleteFileInRootDirectory( const char* pcParameterBuffer )
 {
     PARAMETERLIST stList;
     char vcFileName[ 50 ];
-    int iLength;
+    int iLength, res;
     
     // 파라미터 리스트를 초기화하여 파일 이름을 추출
     kInitializeParameter( &stList, pcParameterBuffer );
@@ -1912,8 +1848,11 @@ static void kDeleteFileInRootDirectory( const char* pcParameterBuffer )
         return ;
     }
 
-    if( remove( vcFileName ) != 0 )
-    {
+    res = remove( vcFileName );
+    if(res == -2){
+        return;
+    }
+    else if( res != 0 ){
         kPrintf( "File Not Found or File Opened\n" );
         return ;
     }
@@ -2190,7 +2129,10 @@ static void kReadDataFromFile( const char* pcParameterBuffer )
     
     // 파일 생성
     fp = fopen( vcFileName, "r" );
-    if( fp == NULL )
+    if( fp == -2 ){
+        return;
+    }
+    else if( fp == NULL )
     {
         kPrintf( "%s File Open Fail\n", vcFileName );
         return ;
@@ -2750,7 +2692,20 @@ static void kMoveDirectory( const char* pcParamegerBuffer){
     // 입력한 디렉토리 이름과 같은 디렉토리를 찾음
     for(i = 0; i < FILESYSTEM_MAXDIRECTORYENTRYCOUNT; i++){
         if(kStrLen(pstCurrentDirectory[i].vcFileName) == kStrLen(vcFileName) && kMemCmp(pstCurrentDirectory[i].vcFileName, vcFileName, 
-                           kStrLen(vcFileName) + 1 /*MAX(kStrLen(directoryInfo[i].vcFileName), kStrLen(vcFileName))*/) == 0){
+                                                                        kStrLen(vcFileName) + 1) == 0){
+            if(i != 0 && i != 1){
+                kPrintf("Username = %s\n", exUserName);
+                kPrintf("kGetUserLevel = %d\n", kGetUserLevel(exUserName));
+                kPrintf("directoryInfo[ j ].objectLevel = %d\n", pstCurrentDirectory[i].objectLevel );
+                //if level is not high than directorylevel and not own userfile, get out
+                if ( (kGetUserLevel(exUserName) >= pstCurrentDirectory[i].objectLevel) &&
+                                    !(kMemCmp(exUserName, pstCurrentDirectory[i].vcFileName, kStrLen(exUserName))==0) )
+                {
+                    kPrintf("you are not allowed to access this folder\n");
+                    return;
+                }
+            }
+
             // 디렉토리 이동
             currentDirectoryClusterIndex = pstCurrentDirectory[i].dwStartClusterIndex;
             kSetClusterIndex(currentDirectoryClusterIndex);
@@ -2774,6 +2729,7 @@ static void kRemoveDirectory( const char* pcParameterBuffer ){
     PARAMETERLIST stList;
     char vcFileName[ 50 ];
     int iLength;
+    int res;
     
     // 파라미터 리스트를 초기화하여 파일 이름을 추출
     kInitializeParameter( &stList, pcParameterBuffer );
@@ -2784,7 +2740,11 @@ static void kRemoveDirectory( const char* pcParameterBuffer ){
         return ;
     }
 
-    if( remove( vcFileName ) != 0 ){
+    res = remove( vcFileName );
+    if(res == -2){
+        return;
+    }
+    else if( res != 0 ){
         kPrintf( "File Not Found or File Opened\n" );
         return ;
     }
@@ -2837,7 +2797,11 @@ static void kShowDirectory( const char* pcParameterBuffer )
                 kSPrintf( vcTempValue, "0x%X Cluster", pstEntry->dwStartClusterIndex );
                 kMemCpy( vcBuffer + 55, vcTempValue, kStrLen( vcTempValue ) + 1 );
 
-                kPrintf( "    %s\n", vcBuffer );
+                // 파일의 level 삽입
+                // kSPrintf( vcTempValue, "Level %d", pstEntry->objectLevel );
+                // kMemCpy( vcBuffer + 70, vcTempValue, kStrLen( vcTempValue ) + 1 );
+
+                kPrintf( "    %s level %d\n", vcBuffer, pstEntry->objectLevel );
             }
             else if(pstEntry->flag == 1)
             {
@@ -2848,7 +2812,12 @@ static void kShowDirectory( const char* pcParameterBuffer )
                 kSPrintf( vcTempValue, "Directory", 10 );
                 kMemCpy( vcBuffer + 30, vcTempValue, kStrLen( vcTempValue ) +1);
                 //vcBuffer[kStrLen(vcBuffer) + 1] = '\0';
-                kPrintf( "    %s\n", vcBuffer );
+
+                // 파일의 level 삽입
+                // kSPrintf( vcTempValue, "Level %d", pstEntry->objectLevel );
+                // kMemCpy( vcBuffer + 55, vcTempValue, kStrLen( vcTempValue ) + 1 );
+
+                kPrintf( "    %s level %d\n", vcBuffer, pstEntry->objectLevel );
             }     
         }
     }   
@@ -2882,6 +2851,7 @@ static void kCreateAccount(const char* pcParameterBuffer){
             }
 
             kFlushFileSystemCache();
+            kChangeAdminLevel(vcID);
             kPrintf("Success to create a new account [%s].\n", vcID);
             return;
         }
@@ -2892,6 +2862,27 @@ static void kCreateAccount(const char* pcParameterBuffer){
     }  
 }
 
+//admin이 만든 폴더는 admin level 이지만 사용자 폴더라면 사용자 레벨을 따라가야함
+static void kChangeAdminLevel(char* vcID ){
+    DIR* pstDirectory;
+    int i, iCount, iTotalCount;
+    DIRECTORYENTRY* pstEntry = kFindDirectory(currentDirectoryClusterIndex);
+
+    int nameLength = kStrLen(vcID);
+    for( int i = 0 ; i < FILESYSTEM_MAXDIRECTORYENTRYCOUNT ; i++ )
+    {
+        if(kMemCmp( pstEntry[ i ].vcFileName, vcID, MAX(kStrLen(pstEntry[ i ].vcFileName), nameLength) ) == 0 ){
+            kPrintf(" ====== levelChange(admin->user) ========\n");
+            kPrintf("------%d \n", pstEntry[i].objectLevel);
+            pstEntry[ i ].objectLevel = AUTH_LEVEL_MEDIUM;
+            kPrintf("------%d \n", pstEntry[i].objectLevel);
+            break;
+        }
+    }
+
+}
+
+
 /**
  * 계정 비밀번호 변경
  */
@@ -2901,7 +2892,7 @@ static void kChangePasswd( const char* pcParameterBuffer ){
     kPrintf("Enter your password: ");
     kScanf(vcPassword, FALSE);
 
-    if(kChangePassword(userName, vcPassword)){
+    if(kChangePassword(exUserName, vcPassword)){
         kPrintf("Change Password Success !!\n");
     }
     else{
@@ -2953,10 +2944,10 @@ static BOOL kChangeLevel( const char* pcParameterBuffer ){
 
     //계정 권한 변경은 admin만 가능
     char * adminname = "admin\0";
-    currentUserLength = kStrLen( userName );
+    currentUserLength = kStrLen( exUserName );
     nameLength = kStrLen( inputuser );
 
-    if( (currentUserLength != kStrLen(adminname)) || (kMemCmp( userName, adminname, currentUserLength ) != 0) ){
+    if( (currentUserLength != kStrLen(adminname)) || (kMemCmp( exUserName, adminname, currentUserLength ) != 0) ){
         kPrintf("you cannot change user's authority !!\n");
         return FALSE;
     }

@@ -18,6 +18,7 @@ fWriteHDDSector gs_pfWriteHDDSector = NULL;
 
 char prompt_path[100];
 DWORD currentClusterIndex = 0;
+extern char exUserName[FILESYSTEM_MAXUSERNAMELENGTH];
 
 void kSetClusterIndex(DWORD currentDirectoryClusterIndex)
 {
@@ -287,6 +288,7 @@ void kSetDotInDirectory(DWORD myClusterIndex){
     stEntry.ParentDirectoryCluserIndex = parentClusterIndex;
     stEntry.ParentDirectoryPath[0] = '/';
     stEntry.ParentDirectoryPath[1] = '\0';
+    stEntry.objectLevel = 10;
     
     
     // 디렉터리 엔트리를 등록
@@ -305,6 +307,7 @@ void kSetDotInDirectory(DWORD myClusterIndex){
     stEntry.ParentDirectoryCluserIndex = parentClusterIndex;
     stEntry.ParentDirectoryPath[0] = '/';
     stEntry.ParentDirectoryPath[1] = '\0';
+    stEntry.objectLevel = 10;
    
     
     iDirectoryEntryOffset = 1;
@@ -1012,6 +1015,7 @@ static BOOL kCreateFile( const char* pcFileName, DIRECTORYENTRY* pstEntry,
         int* piDirectoryEntryIndex )
 {
     DWORD dwCluster;
+    int level;
 
     
     // 빈 클러스터를 찾아서 할당된 것으로 설정
@@ -1030,12 +1034,22 @@ static BOOL kCreateFile( const char* pcFileName, DIRECTORYENTRY* pstEntry,
         kSetClusterLinkData( dwCluster, FILESYSTEM_FREECLUSTER );
         return FALSE;
     }
-    
     // 디렉터리 엔트리를 설정
     kMemCpy( pstEntry->vcFileName, pcFileName, kStrLen( pcFileName ) + 1 );
     pstEntry->dwStartClusterIndex = dwCluster;
     pstEntry->dwFileSize = 0;
     pstEntry->flag = 0;
+
+    // exUserName을 이용해 user의 level 읽기
+    LOGINENTRY* pstLoginEntry = kReadLogin();
+    int nameLength = kStrLen(exUserName);
+    for( int i = 0 ; i < FILESYSTEM_MAXLOGINENTRYCOUNT ; i++ )
+    {
+        if( kStrLen(pstLoginEntry[i].userName) == kStrLen(exUserName) && kMemCmp( pstLoginEntry[ i ].userName, exUserName, nameLength ) == 0 ){
+            pstEntry->objectLevel = pstLoginEntry[i].userLevel;
+            break;
+        }
+    }
 
     // 디렉터리 엔트리를 등록
     if( kSetDirectoryEntryData( *piDirectoryEntryIndex, pstEntry ) == FALSE )
@@ -1080,7 +1094,31 @@ static BOOL kCreateDirectory( const char* pcFileName, DIRECTORYENTRY* pstEntry,
     pstEntry->ParentDirectoryPath[0] = '/';
     pstEntry->ParentDirectoryPath[1] = '\0';
     pstEntry->ParentDirectoryCluserIndex = currentClusterIndex;
-
+   
+    // exUserName을 이용해 user의 level 읽기
+    BOOL levelSet = FALSE;
+    LOGINENTRY* pstLoginEntry = kReadLogin();
+    int nameLength = kStrLen(exUserName);
+    int fileLength = kStrLen(pcFileName);
+    for( int i = 1 ; i < FILESYSTEM_MAXLOGINENTRYCOUNT ; i++ )
+    {
+        if(kMemCmp( pstLoginEntry[ i ].userName, exUserName, MAX(kStrLen(pstLoginEntry[i].userName), nameLength) ) == 0 ){
+            pstEntry->objectLevel = pstLoginEntry[i].userLevel;
+            levelSet = TRUE;
+            break;
+        }
+    }
+    if(kMemCmp(pcFileName, "admin", MAX(6, fileLength)) == 0 || kMemCmp(exUserName, "admin", MAX(6, nameLength)) == 0){
+        pstEntry->objectLevel = AUTH_LEVEL_ADMIN;
+        levelSet = TRUE;
+    }
+    else if(kMemCmp(pcFileName, "sharedfolder", MAX(kStrLen("sharedfolder"), fileLength)) == 0){
+        pstEntry->objectLevel = AUTH_LEVEL_SHARE;
+        levelSet = TRUE;
+    }
+    if(!levelSet){
+        pstEntry->objectLevel = AUTH_LEVEL_MEDIUM;
+    }
    
     // 디렉터리 엔트리를 등록
     if( kSetDirectoryEntryData( *piDirectoryEntryIndex, pstEntry ) == FALSE )
@@ -1243,6 +1281,17 @@ FILE* kOpenFile( const char* pcFileName, const char* pcMode )
        
         // 파일의 내용이 모두 비워졌으므로, 크기를 0으로 설정
         stEntry.dwFileSize = 0;
+        // exUserName을 이용해 user의 level 읽기
+        LOGINENTRY* pstLoginEntry = kReadLogin();
+        int nameLength = kStrLen(exUserName);
+        for( int i = 0 ; i < FILESYSTEM_MAXLOGINENTRYCOUNT ; i++ )
+        {
+            if( kMemCmp(kStrLen(pstLoginEntry[i].userName) == kStrLen(exUserName) && pstLoginEntry[ i ].userName, exUserName, nameLength ) == 0 ){
+                stEntry.objectLevel = pstLoginEntry[i].userLevel;
+                break;
+            }
+        }
+
         if( kSetDirectoryEntryData( iDirectoryEntryOffset, &stEntry ) == FALSE )
         {
             // 동기화
@@ -1250,6 +1299,15 @@ FILE* kOpenFile( const char* pcFileName, const char* pcMode )
             return NULL;
         }
     }
+    else if(pcMode[ 0 ] == 'r'){
+        // permission check
+        if(stEntry.objectLevel < kGetUserLevel(exUserName)){
+            kPrintf("you cannot Read this file !!\n");
+            return -2;
+        }
+    }
+    
+
     //==========================================================================
     // 파일 핸들을 할당 받아 데이터를 설정한 후 반환
     //==========================================================================
@@ -1809,6 +1867,13 @@ int kRemoveFile( const char* pcFileName )
     
     // 파일이 존재하는가 확인
     iDirectoryEntryOffset = kFindDirectoryEntry( pcFileName, &stEntry );
+
+    // permission check
+    if(stEntry.objectLevel < kGetUserLevel(exUserName)){
+        kPrintf("you cannot remove this file/folder !!\n");
+        return -2;
+    }
+
     if( iDirectoryEntryOffset == -1 ) 
     { 
         // 동기화
@@ -2163,11 +2228,14 @@ BOOL kCreateLoginFile()
     kMemCpy( pstEntry.userName, "admin", 6 );
     kMemCpy( pstEntry.password, "1234", 5 );
     pstEntry.dwStartClusterIndex = userHome->stDirectoryHandle.pstDirectoryBuffer->dwStartClusterIndex;
-
-    // Set User Level
     pstEntry.userLevel = AUTH_LEVEL_ADMIN;
 
     kCloseDirectory(userHome);
+
+    // 공유폴더 생성 .......?
+    DIR* sfolder;
+    sfolder = kOpenDirectory("sharedfolder");
+    kCloseDirectory(sfolder);
     
     // Login 엔트리를 등록
     if( kSetLoginEntryData( loginEntryIndex, &pstEntry ) == FALSE )
@@ -2245,7 +2313,6 @@ BOOL kWriteLoginEntryData( const char* newUserName, const char* newPassword )
         return FALSE;
     }
     
-
     return TRUE;
 }
 
@@ -2312,7 +2379,7 @@ BOOL kSetLoginEntryData( int iIndex, LOGINENTRY* pstEntry )
 }
 
 
-BOOL kChangePassword(char* userName, char* inputpasswd){
+BOOL kChangePassword(char* user, char* inputpasswd){
     LOGINENTRY* loginEntry;
     int passLength, nameLength;
     char vcPassword[FILESYSTEM_MAXPASSWORDLENGTH];
@@ -2332,14 +2399,14 @@ BOOL kChangePassword(char* userName, char* inputpasswd){
     loginEntry = ( LOGINENTRY* ) gs_vbTempBuffer;
 
     // userName과 같은 엔트리를 찾은 후 inputpasswd와 같은지 확인해야함
-    nameLength = kStrLen( userName );
+    nameLength = kStrLen( user );
     passLength = kStrLen( inputpasswd );
 
     for( int i = 0 ; i < FILESYSTEM_MAXLOGINENTRYCOUNT ; i++ )
     {
-        if( kMemCmp( loginEntry[ i ].userName, userName, nameLength ) == 0 )
+        if(kStrLen(loginEntry[i].userName) == nameLength && kMemCmp( loginEntry[ i ].userName, user, nameLength ) == 0 )
         {
-            if( kMemCmp( loginEntry[ i ].password, inputpasswd, passLength ) == 0 ){
+            if( kMemCmp(kStrLen(loginEntry[i].password) == passLength && loginEntry[ i ].password, inputpasswd, passLength ) == 0 ){
                 // 비밀번호 변경하고 다시 저장
                 kPrintf("Enter your NEW password: ");
                 kScanf(vcPassword, FALSE);
@@ -2367,24 +2434,18 @@ LOGINENTRY* kReadLogin(){
     return gs_vbTempBuffer;;
 }
 
-int kGetUserLevel(char* userName){
+int kGetUserLevel(char* user){
     LOGINENTRY* loginEntry;
     int nameLength, level;
-    
-    //  LoginFile를 읽음
-    if( kReadCluster( LOGIN_CLUSTER_NUM, gs_vbTempBuffer ) == FALSE )
-    {
-        return FALSE;
-    }    
-    // 루트 디렉터리에 있는 해당 데이터를 갱신
-    loginEntry = ( LOGINENTRY* ) gs_vbTempBuffer;
+     
+    loginEntry = kReadLogin();
 
     // userName과 같은 엔트리를 찾은 후 level return
-    nameLength = kStrLen( userName );
+    nameLength = kStrLen( user );
 
     for( int i = 0 ; i < FILESYSTEM_MAXLOGINENTRYCOUNT ; i++ )
     {
-        if( kMemCmp( loginEntry[ i ].userName, userName, nameLength ) == 0 )
+        if(kStrLen(loginEntry[i].userName) == kStrLen(user) && kMemCmp( loginEntry[ i ].userName, user, nameLength ) == 0 )
         {
             level = loginEntry[i].userLevel;
             break;

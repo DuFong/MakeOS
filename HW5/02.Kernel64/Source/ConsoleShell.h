@@ -92,6 +92,7 @@ static void kChangePasswd(const char* pcParameterBuffer);
 static void kLogout( const char* pcParameterBuffer );
 static void kShowAccount(const char* pcParameterBuffer);
 static BOOL kChangeLevel( const char* pcParameterBuffer);
+static void kChangeAdminLevel(char* vcID );
 static void kChangePath(int i, char* vcDirectoryName, DWORD dwParentDirectoryClusterIndex);
 static void kGetCurrentDirectoryName(DIRECTORYENTRY* pstCurrentDirectory);
 
