@@ -2692,7 +2692,20 @@ static void kMoveDirectory( const char* pcParamegerBuffer){
     // 입력한 디렉토리 이름과 같은 디렉토리를 찾음
     for(i = 0; i < FILESYSTEM_MAXDIRECTORYENTRYCOUNT; i++){
         if(kStrLen(pstCurrentDirectory[i].vcFileName) == kStrLen(vcFileName) && kMemCmp(pstCurrentDirectory[i].vcFileName, vcFileName, 
-                           kStrLen(vcFileName) + 1 /*MAX(kStrLen(directoryInfo[i].vcFileName), kStrLen(vcFileName))*/) == 0){
+                                                                        kStrLen(vcFileName) + 1) == 0){
+            if(i != 0 && i != 1){
+                kPrintf("Username = %s\n", exUserName);
+                kPrintf("kGetUserLevel = %d\n", kGetUserLevel(exUserName));
+                kPrintf("directoryInfo[ j ].objectLevel = %d\n", pstCurrentDirectory[i].objectLevel );
+                //if level is not high than directorylevel and not own userfile, get out
+                if ( (kGetUserLevel(exUserName) >= pstCurrentDirectory[i].objectLevel) &&
+                                    !(kMemCmp(exUserName, pstCurrentDirectory[i].vcFileName, kStrLen(exUserName))==0) )
+                {
+                    kPrintf("you are not allowed to access this folder\n");
+                    return;
+                }
+            }
+
             // 디렉토리 이동
             currentDirectoryClusterIndex = pstCurrentDirectory[i].dwStartClusterIndex;
             kSetClusterIndex(currentDirectoryClusterIndex);
