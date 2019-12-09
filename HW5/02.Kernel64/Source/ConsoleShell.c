@@ -2849,25 +2849,7 @@ static void kCreateAccount(const char* pcParameterBuffer){
     }  
 }
 
-//admin이 만든 폴더는 admin level 이지만 사용자 폴더라면 사용자 레벨을 따라가야함
-static void kChangeAdminLevel(char* vcID ){
-    DIR* pstDirectory;
-    int i, iCount, iTotalCount;
-    DIRECTORYENTRY* pstEntry = kFindDirectory(currentDirectoryClusterIndex);
 
-    int nameLength = kStrLen(vcID);
-    for( int i = 0 ; i < FILESYSTEM_MAXDIRECTORYENTRYCOUNT ; i++ )
-    {
-        if(kMemCmp( pstEntry[ i ].vcFileName, vcID, MAX(kStrLen(pstEntry[ i ].vcFileName), nameLength) ) == 0 ){
-            kPrintf(" ====== levelChange(admin->user) ========\n");
-            kPrintf("------%d \n", pstEntry[i].objectLevel);
-            pstEntry[ i ].objectLevel = AUTH_LEVEL_MEDIUM;
-            kPrintf("------%d \n", pstEntry[i].objectLevel);
-            break;
-        }
-    }
-
-}
 
 
 /**

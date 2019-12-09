@@ -258,7 +258,7 @@ static DWORD kFindFreeCluster( void );
 static BOOL kSetClusterLinkData( DWORD dwClusterIndex, DWORD dwData );
 static BOOL kGetClusterLinkData( DWORD dwClusterIndex, DWORD* pdwData );
 static int kFindFreeDirectoryEntry( void );
-static BOOL kSetDirectoryEntryData( int iIndex, DIRECTORYENTRY* pstEntry );
+BOOL kSetDirectoryEntryData( int iIndex, DIRECTORYENTRY* pstEntry );
 static BOOL kGetDirectoryEntryData( int iIndex, DIRECTORYENTRY* pstEntry );
 static int kFindDirectoryEntry( const char* pcFileName, DIRECTORYENTRY* pstEntry );
 void kGetFileSystemInformation( FILESYSTEMMANAGER* pstManager );
@@ -314,5 +314,6 @@ static BOOL kCreateDirectory( const char* pcFileName, DIRECTORYENTRY* pstEntry,
  BOOL kSetLoginEntryData( int iIndex, LOGINENTRY* pstEntry );
 BOOL kChangePassword(char* userName, char* inputpasswd);
 LOGINENTRY* kReadLogin(void);
+static BOOL kChangeLevel( const char* pcParameterBuffer);
 
 #endif /*__FILESYSTEM_H__*/

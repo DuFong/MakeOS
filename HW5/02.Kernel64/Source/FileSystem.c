@@ -869,7 +869,7 @@ static int kFindFreeDirectoryEntry( void )
 /**
  *  Current 디렉터리의 해당 인덱스에 디렉터리 엔트리를 설정
  */
-static BOOL kSetDirectoryEntryData( int iIndex, DIRECTORYENTRY* pstEntry )
+BOOL kSetDirectoryEntryData( int iIndex, DIRECTORYENTRY* pstEntry )
 {
     DIRECTORYENTRY* pstCurrentEntry;
     
@@ -2450,4 +2450,24 @@ int kGetUserLevel(char* user){
         }
     }
     return level;
+}
+
+//admin이 만든 폴더는 admin level 이지만 사용자 폴더라면 사용자 레벨을 따라가야함
+void kChangeAdminLevel(char* vcID ){
+    DIR* pstDirectory;
+    int i, iCount, iTotalCount;
+    DIRECTORYENTRY* pstEntry;
+    kReadCluster(currentClusterIndex, gs_vbTempBuffer);
+    pstEntry = (DIRECTORYENTRY*) gs_vbTempBuffer;
+
+    int nameLength = kStrLen(vcID);
+    for( int i = 0 ; i < FILESYSTEM_MAXDIRECTORYENTRYCOUNT ; i++ )
+    {
+        if(kMemCmp( pstEntry[ i ].vcFileName, vcID, MAX(kStrLen(pstEntry[ i ].vcFileName), nameLength) ) == 0 ){
+            pstEntry[ i ].objectLevel = AUTH_LEVEL_MEDIUM;
+            break;
+        }
+    }
+    // 현재 디렉터리에 씀
+    kWriteCluster( currentClusterIndex, gs_vbTempBuffer );
 }
