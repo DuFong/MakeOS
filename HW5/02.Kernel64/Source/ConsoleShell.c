@@ -2721,9 +2721,11 @@ static void kMoveDirectory( const char* pcParamegerBuffer){
     PARAMETERLIST stList;
     char vcFileName[ 50 ];
     int iLength;
-    DWORD dwCluster;
     int i;
     FILE* pstFile;
+    char tmpPath[100] = "\0";
+    FILESYSTEMMANAGER stManager;
+    DIRECTORYENTRY* pstCurrentDirectory;
     
     // 파라미터 리스트를 초기화하여 파일 이름을 추출
     kInitializeParameter( &stList, pcParamegerBuffer );
@@ -2734,82 +2736,95 @@ static void kMoveDirectory( const char* pcParamegerBuffer){
         kPrintf( "Too Long or Too Short File Name\n" );
         return ;
     }
-
-    DIR* pstDirectory;
-    
-    FILESYSTEMMANAGER stManager;
-    DIRECTORYENTRY* directoryInfo;
-    char temp_path[100] = "\0";
-    DWORD temp_index = 0;
     
     // 파일 시스템 정보를 얻음
     kGetFileSystemInformation( &stManager );
     
-    directoryInfo = kFindDirectory(currentDirectoryClusterIndex);
-    kPrintf("\nindex call cd %d\n", currentDirectoryClusterIndex);
+    // 현재 디렉토리
+    pstCurrentDirectory = kFindDirectory(currentDirectoryClusterIndex);
+    kPrintf("\n----------------------------index call cd %d\n", currentDirectoryClusterIndex);
 
-    if(kMemCmp(vcFileName, ".", 2) == 0){
-        currentDirectoryClusterIndex = directoryInfo[0].dwStartClusterIndex;
-        kSetClusterIndex(currentDirectoryClusterIndex);
-        kMemCpy(path,directoryInfo[0].ParentDirectoryPath,kStrLen(directoryInfo[0].ParentDirectoryPath)+1);
-     }
-    else if(kMemCmp(vcFileName, "..", 3) == 0){
-       
-        currentDirectoryClusterIndex = directoryInfo[1].dwStartClusterIndex;
-        kSetClusterIndex(currentDirectoryClusterIndex);        
-        kMemCpy(path,directoryInfo[1].ParentDirectoryPath,kStrLen(directoryInfo[1].ParentDirectoryPath)+1);
-     }   
-    else{
-        for( int j = 0 ; j < FILESYSTEM_MAXDIRECTORYENTRYCOUNT ; j++ )
-        {   //below folder's start cluster index != 0 && below folder's filename's strlen==filename && 
-            if( directoryInfo[ j ].dwStartClusterIndex != 0 && kStrLen(directoryInfo[j].vcFileName) == 
-            kStrLen(vcFileName) && kMemCmp(directoryInfo[ j ].vcFileName,vcFileName,kStrLen(vcFileName)+1)==0 
-                && directoryInfo[j].flag == 1)
-            {   /*//if you'r current directory is root
-                if(currentDirectoryClusterIndex == 0)
-                {   //if you are not 'admin' and also folder(you want to move)is not your own user folder
-                    //get out!
-                    if ( (kGetUserLevel(userName) > AUTH_LEVEL_ADMIN) && (kMemCmp(vcFileName, userName, kStrLen(userName)) != 0) )
-                    {
-                        kPrintf("you cannot access to this folder\n");
-                        break;
-                    }
-                }  
-                */             
+    // 입력한 디렉토리 이름과 같은 디렉토리를 찾음
+    for(i = 0; i < FILESYSTEM_MAXDIRECTORYENTRYCOUNT; i++){
+        if(kStrLen(pstCurrentDirectory[i].vcFileName) == kStrLen(vcFileName) && kMemCmp(pstCurrentDirectory[i].vcFileName, vcFileName, 
+                           kStrLen(vcFileName) + 1 /*MAX(kStrLen(directoryInfo[i].vcFileName), kStrLen(vcFileName))*/) == 0){
+            // 디렉토리 이동
+            currentDirectoryClusterIndex = pstCurrentDirectory[i].dwStartClusterIndex;
+            kSetClusterIndex(currentDirectoryClusterIndex);
+            pstCurrentDirectory = NULL;
+            pstCurrentDirectory = kFindDirectory(currentDirectoryClusterIndex);
 
-                //store currentpath and currentdircluster index in temp variable
-                kMemCpy(temp_path,path,kStrLen(path)+1);   
-                temp_index = currentDirectoryClusterIndex;
-                
-                //if path is root
-                if(kMemCmp(path,"/",2)==0)
-                    kMemCpy(path + kStrLen(path),vcFileName,kStrLen(vcFileName)+1);
-                else{
-                    kMemCpy(path + kStrLen(path), "/", 1);
-                    kMemCpy(path + kStrLen(path), vcFileName, kStrLen(vcFileName) + 1);
-                }
-
-                currentDirectoryClusterIndex = directoryInfo[ j ].dwStartClusterIndex;
-                kSetClusterIndex(currentDirectoryClusterIndex);
-                directoryInfo = NULL;
-                directoryInfo = kFindDirectory(currentDirectoryClusterIndex);
-                /*
-                if( directoryInfo[ 0 ].dwStartClusterIndex != -1 )
-                {
-                    //kSetDotInDirectory();
-                    kUpdateDirectory(0,".",path,currentDirectoryClusterIndex);
-                
-                }
-
-                directoryInfo[1].ParentDirectoryCluserIndex = temp_index;
-                kMemCpy(directoryInfo[1].ParentDirectoryPath,temp_path,kStrLen(temp_path) + 1);
-                kUpdateDirectory( 1, "..", temp_path, temp_index );
-                */
+            // 경로 설정
             
-                break;          
-            }     
+            return;
         }
     }
+    // 이동할 디렉토리를 찾지 못함
+    kPrintf("No such file or directory\n");
+
+    // if(kMemCmp(vcFileName, ".", 2) == 0){
+    //     currentDirectoryClusterIndex = directoryInfo[0].dwStartClusterIndex;
+    //     kSetClusterIndex(currentDirectoryClusterIndex);
+    //     //kMemCpy(path,directoryInfo[0].ParentDirectoryPath,kStrLen(directoryInfo[0].ParentDirectoryPath)+1);
+    //  }
+    // else if(kMemCmp(vcFileName, "..", 3) == 0){
+       
+    //     currentDirectoryClusterIndex = directoryInfo[1].dwStartClusterIndex;
+    //     kSetClusterIndex(currentDirectoryClusterIndex);        
+    //     kMemCpy(path,directoryInfo[1].ParentDirectoryPath,kStrLen(directoryInfo[1].ParentDirectoryPath)+1);
+    //  }   
+    // else{
+    //     for( int j = 0 ; j < FILESYSTEM_MAXDIRECTORYENTRYCOUNT ; j++ )
+    //     {   //below folder's start cluster index != 0 && below folder's filename's strlen==filename && 
+    //         if( directoryInfo[ j ].dwStartClusterIndex != 0 && kStrLen(directoryInfo[j].vcFileName) == 
+    //         kStrLen(vcFileName) && kMemCmp(directoryInfo[ j ].vcFileName,vcFileName,kStrLen(vcFileName)+1)==0 
+    //             && directoryInfo[j].flag == 1)
+    //         {   /*//if you'r current directory is root
+    //             if(currentDirectoryClusterIndex == 0)
+    //             {   //if you are not 'admin' and also folder(you want to move)is not your own user folder
+    //                 //get out!
+    //                 if ( (kGetUserLevel(userName) > AUTH_LEVEL_ADMIN) && (kMemCmp(vcFileName, userName, kStrLen(userName)) != 0) )
+    //                 {
+    //                     kPrintf("you cannot access to this folder\n");
+    //                     break;
+    //                 }
+    //             }  
+    //             */             
+
+    //             //store currentpath and currentdircluster index in temp variable
+    //             kMemCpy(temp_path,path,kStrLen(path)+1);   
+    //             temp_index = currentDirectoryClusterIndex;
+                
+    //             // //if path is root
+    //             // if(kMemCmp(path,"/",2)==0)
+    //             //     kMemCpy(path + kStrLen(path),vcFileName,kStrLen(vcFileName)+1);
+    //             // else{
+    //             //     kMemCpy(path + kStrLen(path), "/", 1);
+    //             //     kMemCpy(path + kStrLen(path), vcFileName, kStrLen(vcFileName) + 1);
+    //             // }
+
+    //             // 디렉토리 이동
+    //             currentDirectoryClusterIndex = directoryInfo[ j ].dwStartClusterIndex;
+    //             kSetClusterIndex(currentDirectoryClusterIndex);
+    //             directoryInfo = NULL;
+    //             directoryInfo = kFindDirectory(currentDirectoryClusterIndex);
+    //             /*
+    //             if( directoryInfo[ 0 ].dwStartClusterIndex != -1 )
+    //             {
+    //                 //kSetDotInDirectory();
+    //                 kUpdateDirectory(0,".",path,currentDirectoryClusterIndex);
+                
+    //             }
+
+    //             directoryInfo[1].ParentDirectoryCluserIndex = temp_index;
+    //             kMemCpy(directoryInfo[1].ParentDirectoryPath,temp_path,kStrLen(temp_path) + 1);
+    //             kUpdateDirectory( 1, "..", temp_path, temp_index );
+    //             */
+            
+    //             break;          
+    //         }     
+    //     }
+    // }
 }
 
 /**

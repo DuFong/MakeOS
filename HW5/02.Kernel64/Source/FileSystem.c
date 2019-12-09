@@ -946,7 +946,7 @@ static int kFindDirectoryEntry( const char* pcFileName, DIRECTORYENTRY* pstEntry
     pstRootEntry = ( DIRECTORYENTRY* ) gs_vbTempBuffer;
     for( i = 0 ; i < FILESYSTEM_MAXDIRECTORYENTRYCOUNT ; i++ )
     {
-        if( kMemCmp( pstRootEntry[ i ].vcFileName, pcFileName, iLength ) == 0 )
+        if( kStrLen(pstRootEntry[i].vcFileName) == kStrLen(pcFileName) && kMemCmp( pstRootEntry[ i ].vcFileName, pcFileName, iLength ) == 0 )
         {
             kMemCpy( pstEntry, pstRootEntry + i, sizeof( DIRECTORYENTRY ) );
             return i;
@@ -2215,7 +2215,7 @@ BOOL kWriteLoginEntryData( const char* newUserName, const char* newPassword )
 
     for( int i = 0 ; i < FILESYSTEM_MAXLOGINENTRYCOUNT ; i++ )
     {
-        if( kMemCmp( originEntry[ i ].userName, newUserName,  
+        if( kMemCmp( kStrLen(originEntry[i].userName) == kStrLen(newUserName) && originEntry[ i ].userName, newUserName,  
                         MAX(kStrLen(newUserName),kStrLen(originEntry[i].userName))+1) == 0 )
         {
             kPrintf("Duplicated User Name !! \n");
@@ -2273,7 +2273,7 @@ int kFindFreeLoginEntry( void )
     // 엔트리를 검색
     // i=1 -> root user fix
     pstEntry = ( LOGINENTRY* ) gs_vbTempBuffer;
-    for( i = 1 ; i < FILESYSTEM_MAXLOGINENTRYCOUNT ; i++ )
+    for( i = 2 ; i < FILESYSTEM_MAXLOGINENTRYCOUNT ; i++ )
     {
         if( pstEntry[ i ].dwStartClusterIndex == 0 )
         {
