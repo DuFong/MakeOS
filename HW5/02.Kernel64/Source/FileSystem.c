@@ -2114,9 +2114,11 @@ BOOL kCheckLoginState( char * userName, char * password , DWORD * currentDirecto
 
     for( int i = 0 ; i < FILESYSTEM_MAXLOGINENTRYCOUNT ; i++ )
     {
-        if( kMemCmp( loginEntry[ i ].userName, userName, nameLength ) == 0 )
+        if( kStrLen(loginEntry[i].userName) == nameLength &&
+            kMemCmp( loginEntry[ i ].userName, userName, nameLength ) == 0 )
         {
-            if( kMemCmp( loginEntry[ i ].password, password, passLength ) == 0 ){
+            if( kStrLen(loginEntry[i].password) == passLength &&
+                kMemCmp( loginEntry[ i ].password, password, passLength ) == 0 ){
                 // correct !!
                 *currentDirectoryClusterIndex = loginEntry[i].dwStartClusterIndex;
                 return TRUE;
