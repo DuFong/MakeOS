@@ -103,7 +103,6 @@ void kLoginBeforeConsoleShell(){
 
         if (kCheckLoginState( inputID, inputPW , &currentDirectoryClusterIndex ))
         {           
-            kPrintf("cluster index = %d\n", currentDirectoryClusterIndex);
             kPrintf("Login success!\n"); 
             kMemCpy(exUserName, inputID, kStrLen(inputID)+1);
 
