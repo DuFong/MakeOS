@@ -2818,13 +2818,8 @@ static void kShowDirectory( const char* pcParameterBuffer )
                 kMemCpy( vcBuffer + 20, vcTempValue, kStrLen( vcTempValue ) +1);
 
                 //vcBuffer[kStrLen(vcBuffer) + 1] = '\0';
-
-                if(i == 0 || i == 1){
-                    kPrintf( "    %s\n", vcBuffer );
-                }
-                else{
-                    kPrintf( "    %s\t\t(level %d)\n", vcBuffer, pstEntry->objectLevel );
-                }
+                kPrintf( "    %s\n", vcBuffer );
+            
             }     
         }
     }   

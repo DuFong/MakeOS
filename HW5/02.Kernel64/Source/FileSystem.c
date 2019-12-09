@@ -2465,6 +2465,7 @@ void kChangeAdminLevel(char* vcID ){
     DIR* pstDirectory;
     int i, iCount, iTotalCount;
     DIRECTORYENTRY* pstEntry;
+
     kReadCluster(currentClusterIndex, gs_vbTempBuffer);
     pstEntry = (DIRECTORYENTRY*) gs_vbTempBuffer;
 
