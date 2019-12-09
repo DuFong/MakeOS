@@ -43,7 +43,7 @@ BOOL kInitializeFileSystem( void )
         gs_pfWriteHDDSector = kWriteHDDSector;
 
         // 캐시를 활성화함
-        bCacheEnable = TRUE;
+        bCacheEnable = FALSE;
 
     }
     // 하드 디스크 초기화가 실패하면 8Mbyte 크기의 램 디스크를 생성
