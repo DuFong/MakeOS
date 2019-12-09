@@ -2788,17 +2788,13 @@ static void kShowDirectory( const char* pcParameterBuffer )
 
                 // 파일 길이 삽입
                 kSPrintf( vcTempValue, "%d Byte", pstEntry->dwFileSize );
-                kMemCpy( vcBuffer + 30, vcTempValue, kStrLen( vcTempValue )  );
+                kMemCpy( vcBuffer + 20, vcTempValue, kStrLen( vcTempValue )  );
 
                 // 파일의 시작 클러스터 삽입
                 kSPrintf( vcTempValue, "0x%X Cluster", pstEntry->dwStartClusterIndex );
-                kMemCpy( vcBuffer + 55, vcTempValue, kStrLen( vcTempValue ) + 1 );
+                kMemCpy( vcBuffer + 30, vcTempValue, kStrLen( vcTempValue ) + 1 );
 
-                // 파일의 level 삽입
-                // kSPrintf( vcTempValue, "Level %d", pstEntry->objectLevel );
-                // kMemCpy( vcBuffer + 70, vcTempValue, kStrLen( vcTempValue ) + 1 );
-
-                kPrintf( "    %s level %d\n", vcBuffer, pstEntry->objectLevel );
+                kPrintf( "    %s\t(level %d)\n", vcBuffer, pstEntry->objectLevel );
             }
             else if(pstEntry->flag == 1)
             {
@@ -2807,14 +2803,16 @@ static void kShowDirectory( const char* pcParameterBuffer )
 
                 // 파일 길이 삽입
                 kSPrintf( vcTempValue, "Directory", 10 );
-                kMemCpy( vcBuffer + 30, vcTempValue, kStrLen( vcTempValue ) +1);
+                kMemCpy( vcBuffer + 20, vcTempValue, kStrLen( vcTempValue ) +1);
+
                 //vcBuffer[kStrLen(vcBuffer) + 1] = '\0';
 
-                // 파일의 level 삽입
-                // kSPrintf( vcTempValue, "Level %d", pstEntry->objectLevel );
-                // kMemCpy( vcBuffer + 55, vcTempValue, kStrLen( vcTempValue ) + 1 );
-
-                kPrintf( "    %s level %d\n", vcBuffer, pstEntry->objectLevel );
+                if(i == 0 || i == 1){
+                    kPrintf( "    %s\n", vcBuffer );
+                }
+                else{
+                    kPrintf( "    %s\t\t(level %d)\n", vcBuffer, pstEntry->objectLevel );
+                }
             }     
         }
     }   
