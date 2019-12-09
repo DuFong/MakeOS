@@ -103,12 +103,13 @@ void kLoginBeforeConsoleShell(){
 
         if (kCheckLoginState( inputID, inputPW , &currentDirectoryClusterIndex ))
         {           
-            kPrintf("cluster index = %d\n", currentDirectoryClusterIndex);
+            kPrintf("\n(_\\\n  \\ \\   M\n    \\ ('3') \n      >   \\\n     /   _\\ \\\n    /   /   \\ \\\n   |   /      \\_)\n   /  /\n  /  /|\n ( ( \\\n | |\\ \\\n | J \\ )\n ||  ) /\n/ )  L/ \n");
             kPrintf("Login success!\n"); 
             kMemCpy(exUserName, inputID, kStrLen(inputID)+1);
 
             kSetClusterIndex(currentDirectoryClusterIndex);
             kMemCpy(path + 1, exUserName, kStrLen(exUserName)+1);
+
             return;
         }
         // 비밀번호 실패
