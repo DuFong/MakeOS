@@ -2866,9 +2866,6 @@ static void kShowDirectory( const char* pcParameterBuffer )
     DWORD dwUsedClusterCount;
     FILESYSTEMMANAGER stManager;
     DIRECTORYENTRY* directoryInfo;
-    if(currentDirectoryClusterIndex == 0){
-        kUpdateFileSystem();
-    }
 
     
     // 파일 시스템 정보를 얻음
