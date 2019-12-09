@@ -2,6 +2,7 @@
 #define __CONSOLESHELL_H__
 
 #include "Types.h"
+#include "FileSystem.h"
 
 #define CONSOLESHELL_MAXCOMMANDBUFFERCOUNT  300
 #define CONSOLESHELL_PROMPTMESSAGE          "MINT64:"
@@ -92,6 +93,8 @@ static void kLogout( const char* pcParameterBuffer );
 static void kShowAccount(const char* pcParameterBuffer);
 static BOOL kChangeLevel( const char* pcParameterBuffer);
 static void kChangeAdminLevel(char* vcID );
+static void kChangePath(int i, char* vcDirectoryName, DWORD dwParentDirectoryClusterIndex);
+static void kGetCurrentDirectoryName(DIRECTORYENTRY* pstCurrentDirectory);
 
 void kCallCls();
 void kCallTaskList();

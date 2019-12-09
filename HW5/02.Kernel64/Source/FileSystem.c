@@ -44,7 +44,7 @@ BOOL kInitializeFileSystem( void )
         gs_pfWriteHDDSector = kWriteHDDSector;
 
         // 캐시를 활성화함
-        bCacheEnable = TRUE;
+        bCacheEnable = FALSE;
 
     }
     // 하드 디스크 초기화가 실패하면 8Mbyte 크기의 램 디스크를 생성
@@ -276,7 +276,8 @@ void kSetDotInDirectory(DWORD myClusterIndex){
     DIRECTORYENTRY stEntry;
     int iDirectoryEntryOffset = 0;
     DWORD parentClusterIndex = currentClusterIndex;
-    kPrintf("\n current=%d, mycluster=%d \n", currentClusterIndex,myClusterIndex);
+    // for Dubugging
+    //kPrintf("\n current=%d, mycluster=%d \n", currentClusterIndex,myClusterIndex);
     currentClusterIndex = myClusterIndex;
 
     // 디렉터리 엔트리를 설정
@@ -866,7 +867,7 @@ static int kFindFreeDirectoryEntry( void )
 }
 
 /**
- *  루트 디렉터리의 해당 인덱스에 디렉터리 엔트리를 설정
+ *  Current 디렉터리의 해당 인덱스에 디렉터리 엔트리를 설정
  */
 static BOOL kSetDirectoryEntryData( int iIndex, DIRECTORYENTRY* pstEntry )
 {
@@ -879,7 +880,7 @@ static BOOL kSetDirectoryEntryData( int iIndex, DIRECTORYENTRY* pstEntry )
         return FALSE;
     }
 
-    //  디렉터리를 읽음
+    //  Current 디렉터리를 읽음
     if( kReadCluster( currentClusterIndex, gs_vbTempBuffer ) == FALSE )
     {
         return FALSE;
@@ -898,11 +899,11 @@ static BOOL kSetDirectoryEntryData( int iIndex, DIRECTORYENTRY* pstEntry )
 }
 
 /**
- *  루트 디렉터리의 해당 인덱스에 위치하는 디렉터리 엔트리를 반환
+ *  Current 디렉터리의 해당 인덱스에 위치하는 디렉터리 엔트리를 반환
  */
 static BOOL kGetDirectoryEntryData( int iIndex, DIRECTORYENTRY* pstEntry )
 {
-    DIRECTORYENTRY* pstRootEntry;
+    DIRECTORYENTRY* pstCurrentDirEntry;
     
     // 파일 시스템을 인식하지 못했거나 인덱스가 올바르지 않으면 실패
     if( ( gs_stFileSystemManager.bMounted == FALSE ) ||
@@ -911,20 +912,20 @@ static BOOL kGetDirectoryEntryData( int iIndex, DIRECTORYENTRY* pstEntry )
         return FALSE;
     }
 
-    // 루트 디렉터리를 읽음
-    if( kReadCluster( 0, gs_vbTempBuffer ) == FALSE )
+    // Current 디렉터리를 읽음
+    if( kReadCluster( currentClusterIndex, gs_vbTempBuffer ) == FALSE )
     {
         return FALSE;
     }    
     
     // 루트 디렉터리에 있는 해당 데이터를 갱신
-    pstRootEntry = ( DIRECTORYENTRY* ) gs_vbTempBuffer;
-    kMemCpy( pstEntry, pstRootEntry + iIndex, sizeof( DIRECTORYENTRY ) );
+    pstCurrentDirEntry = ( DIRECTORYENTRY* ) gs_vbTempBuffer;
+    kMemCpy( pstEntry, pstCurrentDirEntry + iIndex, sizeof( DIRECTORYENTRY ) );
     return TRUE;
 }
 
 /**
- *  루트 디렉터리에서 파일 이름이 일치하는 엔트리를 찾아서 인덱스를 반환
+ *  Current 디렉터리에서 파일 이름이 일치하는 엔트리를 찾아서 인덱스를 반환
  */
 static int kFindDirectoryEntry( const char* pcFileName, DIRECTORYENTRY* pstEntry )
 {
@@ -938,18 +939,18 @@ static int kFindDirectoryEntry( const char* pcFileName, DIRECTORYENTRY* pstEntry
         return -1;
     }
 
-    // 루트 디렉터리를 읽음
+    // Current 디렉터리를 읽음
     if( kReadCluster( currentClusterIndex, gs_vbTempBuffer ) == FALSE )
     {
         return -1;
     }
     
     iLength = kStrLen( pcFileName );
-    // 루트 디렉터리 안에서 루프를 돌면서 파일 이름이 일치하는 엔트리를 반환
+    // Current 디렉터리 안에서 루프를 돌면서 파일 이름이 일치하는 엔트리를 반환
     pstRootEntry = ( DIRECTORYENTRY* ) gs_vbTempBuffer;
     for( i = 0 ; i < FILESYSTEM_MAXDIRECTORYENTRYCOUNT ; i++ )
     {
-        if( kMemCmp( pstRootEntry[ i ].vcFileName, pcFileName, iLength ) == 0 )
+        if( kStrLen(pstRootEntry[i].vcFileName) == kStrLen(pcFileName) && kMemCmp( pstRootEntry[ i ].vcFileName, pcFileName, iLength ) == 0 )
         {
             kMemCpy( pstEntry, pstRootEntry + i, sizeof( DIRECTORYENTRY ) );
             return i;
@@ -1306,6 +1307,7 @@ FILE* kOpenFile( const char* pcFileName, const char* pcMode )
         }
     }
     
+
     //==========================================================================
     // 파일 핸들을 할당 받아 데이터를 설정한 후 반환
     //==========================================================================
@@ -1946,7 +1948,7 @@ DIR* kOpenDirectory( const char* pcDirectoryName )
     }    
     
 //------------------------------------------------------------------------------------
-    // 루트 디렉터리 밖에 없으므로 디렉터리 이름은 무시하고 핸들만 할당받아서 반환
+    //  디렉터리 밖에 없으므로 디렉터리 이름은 무시하고 핸들만 할당받아서 반환
     pstDirectory = kAllocateFileDirectoryHandle();
     if( pstDirectory == NULL )
     {
@@ -1955,7 +1957,7 @@ DIR* kOpenDirectory( const char* pcDirectoryName )
         return NULL;
     }
     
-    // 루트 디렉터리를 저장할 버퍼를 할당
+    // Current 디렉터리를 저장할 버퍼를 할당
     pstDirectoryBuffer = ( DIRECTORYENTRY* ) kAllocateMemory( FILESYSTEM_CLUSTERSIZE );
     if( pstDirectory == NULL )
     {
@@ -1966,7 +1968,7 @@ DIR* kOpenDirectory( const char* pcDirectoryName )
         return NULL;
     }
     
-    // 루트 디렉터리를 읽음
+    // Current 디렉터리를 읽음
     if( kReadCluster( currentClusterIndex, ( BYTE* ) pstDirectoryBuffer ) == FALSE )
     {
         // 실패하면 핸들과 메모리를 모두 반환해야 함
@@ -2207,7 +2209,6 @@ BOOL kCreateLoginFile()
         return -1;
     }
     originEntry = (LOGINENTRY*) gs_vbTempBuffer;
-    kPrintf("%s\n", originEntry[0].userName);
 
     if(kMemCmp(originEntry[0].userName, "admin", 6) == 0){
         kPrintf("Already root is made\n");
@@ -2247,9 +2248,6 @@ BOOL kCreateLoginFile()
     }
     DIRECTORYENTRY* dir = (DIRECTORYENTRY*) gs_vbTempBuffer;
 
-    kPrintf("\n\nprint admin %s = %d",dir[0].vcFileName ,dir[0].dwStartClusterIndex);
-    kPrintf("\n\nprint admin %s %d \n",dir[1].vcFileName ,dir[1].dwStartClusterIndex);
-
     kFlushFileSystemCache();
     return TRUE;
 }
@@ -2281,7 +2279,7 @@ BOOL kWriteLoginEntryData( const char* newUserName, const char* newPassword )
 
     for( int i = 0 ; i < FILESYSTEM_MAXLOGINENTRYCOUNT ; i++ )
     {
-        if( kMemCmp( originEntry[ i ].userName, newUserName,  
+        if( kMemCmp( kStrLen(originEntry[i].userName) == kStrLen(newUserName) && originEntry[ i ].userName, newUserName,  
                         MAX(kStrLen(newUserName),kStrLen(originEntry[i].userName))+1) == 0 )
         {
             kPrintf("Duplicated User Name !! \n");
@@ -2338,7 +2336,7 @@ int kFindFreeLoginEntry( void )
     // 엔트리를 검색
     // i=1 -> root user fix
     pstEntry = ( LOGINENTRY* ) gs_vbTempBuffer;
-    for( i = 1 ; i < FILESYSTEM_MAXLOGINENTRYCOUNT ; i++ )
+    for( i = 2 ; i < FILESYSTEM_MAXLOGINENTRYCOUNT ; i++ )
     {
         if( pstEntry[ i ].dwStartClusterIndex == 0 )
         {
