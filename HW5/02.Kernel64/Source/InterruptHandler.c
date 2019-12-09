@@ -190,7 +190,7 @@ void kHDDHandler( int iVectorNumber )
     vcBuffer[ 8 ] = '0' + g_iHDDInterruptCount;
     g_iHDDInterruptCount = ( g_iHDDInterruptCount + 1 ) % 10;
     // 왼쪽 위에 있는 메시지와 겹치지 않도록 (10, 0)에 출력
-    kPrintStringXY( 10, 0, vcBuffer );
+    //kPrintStringXY( 10, 0, vcBuffer );
     //=========================================================================
 
     // 첫 번째 PATA 포트의 인터럽트 벡터(IRQ 14) 처리
