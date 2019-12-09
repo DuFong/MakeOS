@@ -103,8 +103,7 @@ void kLoginBeforeConsoleShell(){
 
         if (kCheckLoginState( inputID, inputPW , &currentDirectoryClusterIndex ))
         {           
-            kPrintf("\n(_\\\n  \\ \\   M\n    \\ ('3') \n      >   \\\n     /   _\\ \\\n    /   /   \\ \\\n   |   /      \\_)\n   /  /\n  /  /|\n ( ( \\\n | |\\ \\\n | J \\ )\n ||  ) /\n/ )  L/ \n");
-            kPrintf("Login success!\n"); 
+            kPrintf("\n(_\\\n  \\ \\   M\n    \\ ('3') \n      >   \\\n     /   _\\ \\\n    /   /   \\ \\\n   |   /      \\_)   Login success!\n   /  /\n  /  /|\n ( ( \\\n | |\\ \\\n | J \\ )\n ||  ) /\n/ )  L/ \n\n");
             kMemCpy(exUserName, inputID, kStrLen(inputID)+1);
 
             kSetClusterIndex(currentDirectoryClusterIndex);
