@@ -2694,9 +2694,6 @@ static void kMoveDirectory( const char* pcParamegerBuffer){
         if(kStrLen(pstCurrentDirectory[i].vcFileName) == kStrLen(vcFileName) && kMemCmp(pstCurrentDirectory[i].vcFileName, vcFileName, 
                                                                         kStrLen(vcFileName) + 1) == 0){
             if(i != 0 && i != 1){
-                kPrintf("Username = %s\n", exUserName);
-                kPrintf("kGetUserLevel = %d\n", kGetUserLevel(exUserName));
-                kPrintf("directoryInfo[ j ].objectLevel = %d\n", pstCurrentDirectory[i].objectLevel );
                 //if level is not high than directorylevel and not own userfile, get out
                 if ( (kGetUserLevel(exUserName) >= pstCurrentDirectory[i].objectLevel) &&
                                     !(kMemCmp(exUserName, pstCurrentDirectory[i].vcFileName, kStrLen(exUserName))==0) )

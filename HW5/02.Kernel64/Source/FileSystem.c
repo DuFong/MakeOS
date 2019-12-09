@@ -44,7 +44,7 @@ BOOL kInitializeFileSystem( void )
         gs_pfWriteHDDSector = kWriteHDDSector;
 
         // 캐시를 활성화함
-        bCacheEnable = FALSE;
+        bCacheEnable = TRUE;
 
     }
     // 하드 디스크 초기화가 실패하면 8Mbyte 크기의 램 디스크를 생성
@@ -2430,22 +2430,27 @@ LOGINENTRY* kReadLogin(){
     }    
     
     // 로그인 디렉터리에 있는 해당 데이터를 갱신
-    
-    return gs_vbTempBuffer;;
+
+    return gs_vbTempBuffer;
 }
 
 int kGetUserLevel(char* user){
     LOGINENTRY* loginEntry;
     int nameLength, level;
+    unsigned char tmpBuffer[4096];
      
-    loginEntry = kReadLogin();
-
+    if( kReadCluster( LOGIN_CLUSTER_NUM, tmpBuffer ) == FALSE )
+    {
+        kPrintf("Fail!\n");
+        return;
+    }
+    loginEntry = (LOGINENTRY*)tmpBuffer;
     // userName과 같은 엔트리를 찾은 후 level return
     nameLength = kStrLen( user );
 
     for( int i = 0 ; i < FILESYSTEM_MAXLOGINENTRYCOUNT ; i++ )
     {
-        if(kStrLen(loginEntry[i].userName) == kStrLen(user) && kMemCmp( loginEntry[ i ].userName, user, nameLength ) == 0 )
+        if(kStrLen(loginEntry[i].userName) == nameLength && kMemCmp( loginEntry[ i ].userName, user, nameLength ) == 0 )
         {
             level = loginEntry[i].userLevel;
             break;
