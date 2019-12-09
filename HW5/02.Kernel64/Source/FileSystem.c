@@ -2176,17 +2176,19 @@ BOOL kCheckLoginState( char * userName, char * password , DWORD * currentDirecto
 
     nameLength = kStrLen( userName );
     passLength = kStrLen( password );
-
+   
     for( int i = 0 ; i < FILESYSTEM_MAXLOGINENTRYCOUNT ; i++ )
     {
-        if( kStrLen(loginEntry[i].userName) == nameLength &&
-            kMemCmp( loginEntry[ i ].userName, userName, nameLength ) == 0 )
-        {
-            if( kStrLen(loginEntry[i].password) == passLength &&
-                kMemCmp( loginEntry[ i ].password, password, passLength ) == 0 ){
-                // correct !!
-                *currentDirectoryClusterIndex = loginEntry[i].dwStartClusterIndex;
-                return TRUE;
+        if(loginEntry[i].dwStartClusterIndex != 0){
+            if( (kStrLen(loginEntry[i].userName) == nameLength) &&
+                (kMemCmp( loginEntry[ i ].userName, userName, nameLength ) == 0 ))
+            {
+                if( (kStrLen(loginEntry[i].password) == passLength) &&
+                    (kMemCmp( loginEntry[ i ].password, password, passLength ) == 0 )){
+                    // correct !!
+                    *currentDirectoryClusterIndex = loginEntry[i].dwStartClusterIndex;
+                    return TRUE;
+                }
             }
         }
     }
@@ -2476,4 +2478,16 @@ void kChangeAdminLevel(char* vcID ){
     }
     // 현재 디렉터리에 씀
     kWriteCluster( currentClusterIndex, gs_vbTempBuffer );
+}
+
+void kChangeCacheEnable(){
+    if(gs_stFileSystemManager.bCacheEnable == FALSE){
+        gs_stFileSystemManager.bCacheEnable = kInitializeCacheManager();
+        kPrintf("'`' is not found,\n");
+    }
+    else{
+        kFlushFileSystemCache();
+        gs_stFileSystemManager.bCacheEnable = FALSE;
+        kPrintf("'`' is not found.\n");
+    }
 }

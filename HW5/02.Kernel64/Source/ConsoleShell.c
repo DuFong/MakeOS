@@ -36,6 +36,7 @@ SHELLCOMMANDENTRY gs_vstCommandTable[] = {
     {"prioritytask", "Create tasks with different priority", kPriorityTask},
     {"setscreentimer", "Set screen saver time, ex)setscreentimer 30(seconds)", kSetScreenTimer},
     { "dynamicmeminfo", "Show Dyanmic Memory Information", kShowDyanmicMemoryInformation },
+    { "`", "Change Cache State", kChangeCacheState},
     { "testseqalloc", "Test Sequential Allocation & Free", kTestSequentialAllocation },
     { "testranalloc", "Test Random Allocation & Free", kTestRandomAllocation },
     { "hddinfo", "Show HDD Information", kShowHDDInformation },
@@ -2693,13 +2694,24 @@ static void kMoveDirectory( const char* pcParamegerBuffer){
     for(i = 0; i < FILESYSTEM_MAXDIRECTORYENTRYCOUNT; i++){
         if(kStrLen(pstCurrentDirectory[i].vcFileName) == kStrLen(vcFileName) && kMemCmp(pstCurrentDirectory[i].vcFileName, vcFileName, 
                                                                         kStrLen(vcFileName) + 1) == 0){
+
             if(i != 0 && i != 1){
-                //if level is not high than directorylevel and not own userfile, get out
-                if ( (kGetUserLevel(exUserName) >= pstCurrentDirectory[i].objectLevel) &&
+                // 루트디렉토리인 경우 권한 검사
+                if(currentDirectoryClusterIndex == 0){
+                    //if level is not high than directorylevel and not own userfile, get out
+                    if ( (kGetUserLevel(exUserName) >= pstCurrentDirectory[i].objectLevel) &&
                                     !(kMemCmp(exUserName, pstCurrentDirectory[i].vcFileName, kStrLen(exUserName))==0) )
-                {
-                    kPrintf("you are not allowed to access this folder\n");
-                    return;
+                    {
+                        kPrintf("you are not allowed to access this folder\n");
+                        return;
+                    }
+                }
+                else{
+                    if ( (kGetUserLevel(exUserName) > pstCurrentDirectory[i].objectLevel))
+                    {
+                        kPrintf("you are not allowed to access this folder\n");
+                        return;
+                    }
                 }
             }
 
@@ -2991,6 +3003,10 @@ static void kChangePath(int i, char* vcDirectoryName, DWORD dwParentDirectoryClu
         vcTemp[0] = '/';
         kMemCpy(path, vcTemp, 2);
     }
+}
+
+static void kChangeCacheState(){
+    kChangeCacheEnable();
 }
 
 

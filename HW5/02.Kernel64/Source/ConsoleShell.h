@@ -94,6 +94,7 @@ static void kShowAccount(const char* pcParameterBuffer);
 static BOOL kChangeLevel( const char* pcParameterBuffer);
 static void kChangePath(int i, char* vcDirectoryName, DWORD dwParentDirectoryClusterIndex);
 static void kGetCurrentDirectoryName(DIRECTORYENTRY* pstCurrentDirectory);
+static void kChangeCacheState();
 
 void kCallCls();
 void kCallTaskList();
