@@ -2463,20 +2463,24 @@ void kChangeAdminLevel(char* vcID ){
     DIR* pstDirectory;
     int i, iCount, iTotalCount;
     DIRECTORYENTRY* pstEntry;
-
-    kReadCluster(currentClusterIndex, gs_vbTempBuffer);
-    pstEntry = (DIRECTORYENTRY*) gs_vbTempBuffer;
-
     int nameLength = kStrLen(vcID);
-    for( int i = 0 ; i < FILESYSTEM_MAXDIRECTORYENTRYCOUNT ; i++ )
-    {
-        if(kMemCmp( pstEntry[ i ].vcFileName, vcID, MAX(kStrLen(pstEntry[ i ].vcFileName), nameLength) ) == 0 ){
-            pstEntry[ i ].objectLevel = AUTH_LEVEL_MEDIUM;
-            break;
+    FILESYSTEMMANAGER stManager;
+    
+    kGetFileSystemInformation( &stManager );
+
+    for(int j = 0; j < stManager.dwTotalClusterCount; j++){
+        pstEntry = kFindDirectory(j);
+        for( int i = 0 ; i < FILESYSTEM_MAXDIRECTORYENTRYCOUNT ; i++ )
+        {
+            if(kMemCmp( pstEntry[ i ].vcFileName, vcID, MAX(kStrLen(pstEntry[ i ].vcFileName), nameLength) ) == 0 ){
+                pstEntry[ i ].objectLevel = AUTH_LEVEL_MEDIUM;
+                break;
+            }
         }
+        // 현재 디렉터리에 씀
+        kWriteCluster( j, pstEntry );
+        break;
     }
-    // 현재 디렉터리에 씀
-    kWriteCluster( currentClusterIndex, gs_vbTempBuffer );
 }
 
 void kChangeCacheEnable(){
