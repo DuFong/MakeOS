@@ -2877,7 +2877,7 @@ static void kChangePasswd( const char* pcParameterBuffer ){
     kScanf(vcPassword, FALSE);
 
     if(kChangePassword(exUserName, vcPassword)){
-        kPrintf("Change Password Success !!\n");
+        kPrintf("Change Password Success :)\n");
     }
     else{
         kPrintf("Change Password Fail :(\n");
