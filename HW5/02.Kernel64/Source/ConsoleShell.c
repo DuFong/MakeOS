@@ -36,7 +36,7 @@ SHELLCOMMANDENTRY gs_vstCommandTable[] = {
     {"prioritytask", "Create tasks with different priority", kPriorityTask},
     {"setscreentimer", "Set screen saver time, ex)setscreentimer 30(seconds)", kSetScreenTimer},
     { "dynamicmeminfo", "Show Dyanmic Memory Information", kShowDyanmicMemoryInformation },
-    { "`", "Change Cache State", kChangeCacheState},
+    { ".", "Change Cache State", kChangeCacheState},
     { "testseqalloc", "Test Sequential Allocation & Free", kTestSequentialAllocation },
     { "testranalloc", "Test Random Allocation & Free", kTestRandomAllocation },
     { "hddinfo", "Show HDD Information", kShowHDDInformation },
@@ -52,7 +52,7 @@ SHELLCOMMANDENTRY gs_vstCommandTable[] = {
     { "readfile", "Read Data From File, ex) readfile a.txt", kReadDataFromFile },
     { "testfileio", "Test File I/O Function", kTestFileIO },
     { "testperformance", "Test File Read/WritePerformance", kTestPerformance },
-    { "flush", "Flush File System Cache", kFlushCache },
+    //{ ".", "Flush File System Cache", kFlushCache },
     { "mkdir", "Make Directory, ex) mkdir folder", kMakeDirectory},
     { "cd", "Move Directory, ex) cd folder", kMoveDirectory},
     { "rmdir", "Remove emptyed Directory ex) rmdir folder", kRemoveDirectory},
@@ -2617,16 +2617,17 @@ static void kFlushCache( const char* pcParameterBuffer )
     QWORD qwTickCount;
     
     qwTickCount = kGetTickCount();
-    kPrintf( "Cache Flush... ");
+    //kPrintf( "Cache Flush... ");
     if( kFlushFileSystemCache() == TRUE )
     {
-        kPrintf( "Pass\n" );
+     //   kPrintf( "Pass\n" );
     }
     else
     {
-        kPrintf( "Fail\n" );
+    //    kPrintf( "Fail\n" );
     }
-    kPrintf( "Total Time = %d ms\n", kGetTickCount() - qwTickCount );
+    //kPrintf( "Total Time = %d ms\n", kGetTickCount() - qwTickCount );
+    //kPrintf("'.' is not found.\n");
 }
 
 /**
@@ -2696,21 +2697,30 @@ static void kMoveDirectory( const char* pcParamegerBuffer){
                                                                         kStrLen(vcFileName) + 1) == 0){
 
             if(i != 0 && i != 1){
-                // 루트디렉토리인 경우 권한 검사
-                if(currentDirectoryClusterIndex == 0){
-                    //if level is not high than directorylevel and not own userfile, get out
-                    if ( (kGetUserLevel(exUserName) >= pstCurrentDirectory[i].objectLevel) &&
-                                    !(kMemCmp(exUserName, pstCurrentDirectory[i].vcFileName, kStrLen(exUserName))==0) )
-                    {
-                        kPrintf("you are not allowed to access this folder\n");
-                        return;
+                char *vcTempName = "admin";
+                if(kMemCmp(exUserName, vcTempName, 6)){
+                    // 루트디렉토리인 경우 권한 검사
+                    if(currentDirectoryClusterIndex == 0){
+                        //if level is not high than directorylevel and not own userfile, get out
+                        // if ( (kGetUserLevel(exUserName) >= pstCurrentDirectory[i].objectLevel) &&
+                        //                 !(kMemCmp(exUserName, pstCurrentDirectory[i].vcFileName, kStrLen(exUserName))==0) )
+                        // {
+                        //     kPrintf("you are not allowed to access this folder\n");
+                        //     return;
+                        // }
+                        if((kStrLen(exUserName) == kStrLen(pstCurrentDirectory[i].vcFileName) && 
+                            kMemCmp(exUserName, pstCurrentDirectory[i].vcFileName, kStrLen(exUserName)) == 0) || i == 3);
+                        else{
+                            kPrintf("you are not allowed to access this folder\n");
+                            return;
+                        }
                     }
-                }
-                else{
-                    if ( (kGetUserLevel(exUserName) > pstCurrentDirectory[i].objectLevel))
-                    {
-                        kPrintf("you are not allowed to access this folder\n");
-                        return;
+                    else{
+                        if ( (kGetUserLevel(exUserName) > pstCurrentDirectory[i].objectLevel))
+                        {
+                            kPrintf("you are not allowed to access this folder\n");
+                            return;
+                        }
                     }
                 }
             }
@@ -3001,6 +3011,7 @@ static void kChangePath(int i, char* vcDirectoryName, DWORD dwParentDirectoryClu
 }
 
 static void kChangeCacheState(){
+    kFlushCache(NULL);
     kChangeCacheEnable();
 }
 
