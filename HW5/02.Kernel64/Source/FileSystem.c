@@ -2401,7 +2401,7 @@ BOOL kChangePassword(char* user, char* inputpasswd){
     {
         if(kStrLen(loginEntry[i].userName) == nameLength && kMemCmp( loginEntry[ i ].userName, user, nameLength ) == 0 )
         {
-            if( kStrLen(loginEntry[i].password) == passLength && kMemCmp(loginEntry[ i ].password, inputpasswd, passLength) == 0 ){
+            if( kStrLen(loginEntry[i].password) == passLength && kMemCmp(loginEntry[ i ].password, inputpasswd, passLength ) == 0 ){
                 // 비밀번호 변경하고 다시 저장
                 kPrintf("Enter your NEW password: ");
                 kScanf(vcNewPassword, FALSE);
@@ -2482,11 +2482,11 @@ void kChangeAdminLevel(char* vcID ){
 void kChangeCacheEnable(){
     if(gs_stFileSystemManager.bCacheEnable == FALSE){
         gs_stFileSystemManager.bCacheEnable = kInitializeCacheManager();
-        kPrintf("'`' is not found,\n");
+        kPrintf("'.' is not found,\n");
     }
     else{
         kFlushFileSystemCache();
         gs_stFileSystemManager.bCacheEnable = FALSE;
-        kPrintf("'`' is not found.\n");
+        kPrintf("'.' is not found.\n");
     }
 }
