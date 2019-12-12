@@ -84,7 +84,7 @@ static void kTestFileIO( const char* pcParameterBuffer );
 static void kFlushCache(const char* pcParameterBuffer);
 static void kTestPerformance(const char* pcParameterBuffer);
 static void kMakeDirectory(const char* pcParamegerBuffer);
-static void kMoveDirectory(const char* pcParamegerBuffer);
+static void kChangeDirectory(const char* pcParamegerBuffer);
 static void kRemoveDirectory(const char* pcParameterBuffer);
 static void kShowDirectory(const char* pcParameterBuffer);
 static void kCreateAccount(const char* pcParameterBuffer);

@@ -54,7 +54,7 @@ SHELLCOMMANDENTRY gs_vstCommandTable[] = {
     { "testperformance", "Test File Read/WritePerformance", kTestPerformance },
     //{ ".", "Flush File System Cache", kFlushCache },
     { "mkdir", "Make Directory, ex) mkdir folder", kMakeDirectory},
-    { "cd", "Move Directory, ex) cd folder", kMoveDirectory},
+    { "cd", "Move Directory, ex) cd folder", kChangeDirectory},
     { "rmdir", "Remove emptyed Directory ex) rmdir folder", kRemoveDirectory},
     { "createaccount", "Create New Account", kCreateAccount},
     { "changepasswd", "Change User's Password", kChangePasswd},
@@ -2621,7 +2621,7 @@ static void kMakeDirectory( const char* pcParamegerBuffer ){
 /**
  * 디렉토리 이동
  */
-static void kMoveDirectory( const char* pcParamegerBuffer){
+static void kChangeDirectory( const char* pcParamegerBuffer){
     PARAMETERLIST stList;
     char vcFileName[ 50 ];
     int iLength;
