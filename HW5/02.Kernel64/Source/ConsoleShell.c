@@ -2688,27 +2688,26 @@ static void kShowDirectory( const char* pcParameterBuffer )
 {
     DIR* pstDirectory;
     int i, iCount, iTotalCount;
-    struct dirent* pstEntry;
+    DIRECTORYENTRY* pstEntry;
     char vcBuffer[ 400 ];
     char vcTempValue[ 50 ];
     DWORD dwTotalByte;
     DWORD dwUsedClusterCount;
     FILESYSTEMMANAGER stManager;
-    DIRECTORYENTRY* directoryInfo;
-
+    DIRECTORYENTRY* pstCurrentDirectory;
     
     // 파일 시스템 정보를 얻음
     kGetFileSystemInformation( &stManager );
  
     iCount = 0;
-    directoryInfo = kFindDirectory(currentDirectoryClusterIndex);
+    pstCurrentDirectory = kFindDirectory(currentDirectoryClusterIndex);
      
     for( i = 0 ; i < FILESYSTEM_MAXDIRECTORYENTRYCOUNT ; i++ )
     {
-        if( directoryInfo[ i ].dwStartClusterIndex != 0 || 
-            kMemCmp(directoryInfo[i].vcFileName, ".",2)==0 || kMemCmp(directoryInfo[i].vcFileName, "..",3)==0 )
+        if( pstCurrentDirectory[ i ].dwStartClusterIndex != 0 || 
+            kMemCmp(pstCurrentDirectory[i].vcFileName, ".",2)==0 || kMemCmp(pstCurrentDirectory[i].vcFileName, "..",3)==0 )
         {    
-            pstEntry = &directoryInfo[i];
+            pstEntry = &pstCurrentDirectory[i];
             // 전부 공백으로 초기화 한 후 각 위치에 값을 대입
             kMemSet( vcBuffer, ' ', sizeof( vcBuffer ) - 1 );
             vcBuffer[ sizeof( vcBuffer ) - 1 ] = '\0';
@@ -2738,8 +2737,7 @@ static void kShowDirectory( const char* pcParameterBuffer )
                 kMemCpy( vcBuffer + 20, vcTempValue, kStrLen( vcTempValue ) +1);
 
                 //vcBuffer[kStrLen(vcBuffer) + 1] = '\0';
-                kPrintf( "    %s\n", vcBuffer );
-            
+                kPrintf( "    %s\n", vcBuffer );       
             }     
         }
     }   
@@ -2889,7 +2887,7 @@ static void kMoveDirectoryByParameter(DIRECTORYENTRY* pstCurrentDirectory, DWORD
     // 현재 디렉토리로부터 시작(절대 경로이면 루트 디렉토리부터 시작)
     pstCurrentDirectory = kFindDirectory(dwMoveStartClusterIndex);
     *pdwParentDirectoryClusterIndex = dwMoveStartClusterIndex;
-    
+
     if(bIsAbsolutePath){
         kChangePath(-1, NULL, NULL);
         i = 1;

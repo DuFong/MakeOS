@@ -148,7 +148,7 @@ typedef struct kDirectoryEntryStruct
     // 파일이 시작하는 클러스터 인덱스
     DWORD dwStartClusterIndex;
 
-    //부모 디렉터리 표시
+    // 부모 디렉터리의 시작 클러스터 인덱스
     DWORD ParentDirectoryCluserIndex;
 
     // 파일 또는 디렉토리의 권한(level)
