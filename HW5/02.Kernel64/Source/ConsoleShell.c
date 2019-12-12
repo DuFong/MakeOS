@@ -1999,49 +1999,6 @@ static void kShowAccount( const char* pcParameterBuffer )
         kPrintf(" %s\t\t%s\t\t%d\t\t  %d\n", pstEntry.userName, pstEntry.password, pstEntry.dwStartClusterIndex, pstEntry.userLevel);
 
     }
-
-    // // 버퍼 초기화
-    // kMemSet( vcBuffer, ' ', sizeof( vcBuffer ) - 1 );
-    // vcBuffer[ sizeof( vcBuffer ) - 1 ] = '\0';
-    
-    // pstEntry = pstLoginEntry[0];
-
-    // // 계정 이름 삽입
-    // kMemCpy(vcBuffer, pstEntry.userName, kStrLen(pstEntry.userName) + 1);
-
-    // // 계정 비밀번호
-    // kSPrintf(vcTempValue, "%s", pstEntry.password);
-    // kMemCpy(vcBuffer + 30, vcTempValue, kStrLen(vcTempValue) + 1);
-
-    // // 시작 클러스터
-    // kSPrintf(vcTempValue, "0x%X Cluster", pstEntry.dwStartClusterIndex);
-    // kMemCpy(vcBuffer + 55, vcTempValue, kStrLen(vcTempValue) + 1);
-
-    // kPrintf("%s\n", vcBuffer);
-    // for(i = 1; i < FILESYSTEM_MAXLOGINENTRYCOUNT; i++){
-    //     // 해당 엔트리에 계정 정보가 없음
-    //     if(pstLoginEntry[i].dwStartClusterIndex == 0){
-    //         continue;
-    //     }
-    //     pstEntry = pstLoginEntry[i];
-
-    //     // 버퍼 초기화
-    //     kMemSet( vcBuffer, ' ', sizeof( vcBuffer ) - 1 );
-    //     vcBuffer[ sizeof( vcBuffer ) - 1 ] = '\0';
-
-    //     // 계정 이름 삽입
-    //     kMemCpy(vcBuffer, pstEntry.userName, kStrLen(pstEntry.userName) + 1);
-
-    //     // 계정 비밀번호
-    //     kSPrintf(vcTempValue, "%s", pstEntry.password);
-    //     kMemCpy(vcBuffer + 30, vcTempValue, kStrLen(vcTempValue) + 1);
-
-    //     // 시작 클러스터
-    //     kSPrintf(vcTempValue, "0x%X Cluster", pstEntry.dwStartClusterIndex);
-    //     kMemCpy(vcBuffer + 55, vcTempValue, kStrLen(vcTempValue) + 1);
-
-    //     kPrintf("%s\n", vcBuffer);
-    // }
 }
 
 /**
@@ -2645,6 +2602,7 @@ static void kMakeDirectory( const char* pcParamegerBuffer ){
     kInitializeParameter( &stList, pcParamegerBuffer );
     iLength = kGetNextParameter( &stList, vcFileName );
     vcFileName[ iLength ] = '\0';
+
     if( ( iLength > ( FILESYSTEM_MAXFILENAMELENGTH - 1 ) ) || ( iLength == 0 ) ){
         kPrintf( "Too Long or Too Short File Name\n" );
         return ;
@@ -2656,6 +2614,7 @@ static void kMakeDirectory( const char* pcParamegerBuffer ){
         return;
     }
     fclose( pstFile );
+
     kPrintf( "Directory Create Success\n" );
 }
 
@@ -2666,13 +2625,8 @@ static void kMoveDirectory( const char* pcParamegerBuffer){
     PARAMETERLIST stList;
     char vcFileName[ 50 ];
     int iLength;
-    int i;
-    FILE* pstFile;
-    char vcTmpPath[100] = "\0";
-    //char vcCurrentDirectoryName[50];
     FILESYSTEMMANAGER stManager;
-    DIRECTORYENTRY* pstCurrentDirectory, pstParent;
-    DWORD dwParentDirectoryClusterIndex;
+    DIRECTORYENTRY* pstCurrentDirectory;
     
     // 파라미터 리스트를 초기화하여 파일 이름을 추출
     kInitializeParameter( &stList, pcParamegerBuffer );
@@ -2686,59 +2640,15 @@ static void kMoveDirectory( const char* pcParamegerBuffer){
     
     // 파일 시스템 정보를 얻음
     kGetFileSystemInformation( &stManager );
-    
-    // 현재 디렉토리
-    pstCurrentDirectory = kFindDirectory(currentDirectoryClusterIndex);
-    dwParentDirectoryClusterIndex = currentDirectoryClusterIndex;
 
-    // 입력한 디렉토리 이름과 같은 디렉토리를 찾음
-    for(i = 0; i < FILESYSTEM_MAXDIRECTORYENTRYCOUNT; i++){
-        if(kStrLen(pstCurrentDirectory[i].vcFileName) == kStrLen(vcFileName) && kMemCmp(pstCurrentDirectory[i].vcFileName, vcFileName, 
-                                                                        kStrLen(vcFileName) + 1) == 0){
-
-            if(i != 0 && i != 1){
-                char *vcTempName = "admin";
-                if(kMemCmp(exUserName, vcTempName, 6)){
-                    // 루트디렉토리인 경우 권한 검사
-                    if(currentDirectoryClusterIndex == 0){
-                        //if level is not high than directorylevel and not own userfile, get out
-                        // if ( (kGetUserLevel(exUserName) >= pstCurrentDirectory[i].objectLevel) &&
-                        //                 !(kMemCmp(exUserName, pstCurrentDirectory[i].vcFileName, kStrLen(exUserName))==0) )
-                        // {
-                        //     kPrintf("you are not allowed to access this folder\n");
-                        //     return;
-                        // }
-                        if((kStrLen(exUserName) == kStrLen(pstCurrentDirectory[i].vcFileName) && 
-                            kMemCmp(exUserName, pstCurrentDirectory[i].vcFileName, kStrLen(exUserName)) == 0) || i == 3);
-                        else{
-                            kPrintf("you are not allowed to access this folder\n");
-                            return;
-                        }
-                    }
-                    else{
-                        if ( (kGetUserLevel(exUserName) > pstCurrentDirectory[i].objectLevel))
-                        {
-                            kPrintf("you are not allowed to access this folder\n");
-                            return;
-                        }
-                    }
-                }
-            }
-
-            // 디렉토리 이동
-            currentDirectoryClusterIndex = pstCurrentDirectory[i].dwStartClusterIndex;
-            kSetClusterIndex(currentDirectoryClusterIndex);
-            pstCurrentDirectory = NULL;
-            pstCurrentDirectory = kFindDirectory(currentDirectoryClusterIndex);
-
-            // 경로 설정
-            kChangePath(i, vcFileName, dwParentDirectoryClusterIndex);
-
-            return;
-        }
+    /* 절대 경로로 이동 */
+    if(vcFileName[0] == '/'){
+        kMoveDirectoryByParameter(pstCurrentDirectory, ROOTDIRECTORY_CLUSTER_NUM, vcFileName, iLength, TRUE);
+        return;
     }
-    // 이동할 디렉토리를 찾지 못함
-    kPrintf("No such file or directory\n");
+    
+    /* 상대 경로로 이동 */
+    kMoveDirectoryByParameter(pstCurrentDirectory, currentDirectoryClusterIndex, vcFileName, iLength, FALSE);
 }
 
 /**
@@ -2764,11 +2674,11 @@ static void kRemoveDirectory( const char* pcParameterBuffer ){
         return;
     }
     else if( res != 0 ){
-        kPrintf( "File Not Found or File Opened\n" );
+        kPrintf("No such directory.\n");
         return ;
     }
     
-    kPrintf( "File Delete Success\n" );
+    kPrintf( "Directory remove success.\n" );
 }
 
 /**
@@ -2963,6 +2873,119 @@ static BOOL kChangeLevel( const char* pcParameterBuffer ){
     return TRUE;
 }
 
+/**
+ * 절대경로, 상대경로를 구분하여 디렉토리 이동 시작
+ */
+static void kMoveDirectoryByParameter(DIRECTORYENTRY* pstCurrentDirectory, DWORD dwMoveStartClusterIndex, 
+                                                        char* vcFileName, int iLength, BOOL bIsAbsolutePath){
+    DWORD* pdwParentDirectoryClusterIndex;
+    int iTmp, i;
+    char vcTmpSub[FILESYSTEM_MAXFILENAMELENGTH] = "\0";
+    char vcTmpPath[100] = "\0";
+
+    // 이동 실패에 대비하여 현재 경로를 저장
+    kMemCpy(vcTmpPath, path, kStrLen(path) + 1);
+
+    // 현재 디렉토리로부터 시작(절대 경로이면 루트 디렉토리부터 시작)
+    pstCurrentDirectory = kFindDirectory(dwMoveStartClusterIndex);
+    *pdwParentDirectoryClusterIndex = dwMoveStartClusterIndex;
+    
+    if(bIsAbsolutePath){
+        kChangePath(-1, NULL, NULL);
+        i = 1;
+
+        // 이동할 절대경로가 루트 디렉토리라면 현재 클러스터 인덱스를 0으로 설정하고 종료
+        if(vcFileName[1] == '\0'){
+            currentDirectoryClusterIndex = ROOTDIRECTORY_CLUSTER_NUM;
+            return;
+        }
+    }
+    else{
+        i = 0;
+    }
+
+    // 파라미터를 끝까지 검사
+    iTmp = 0;
+    for(; i < iLength; i++){
+        char cLetter = vcFileName[i];
+
+        if(i == iLength - 1){
+            vcTmpSub[iTmp++] = cLetter;
+            vcTmpSub[iTmp] = '\0';
+        }
+
+        if(cLetter == '/' || i == iLength - 1){
+            // 해당 디렉토리 없으면 즉시 리턴, 있다면 해당 디렉토리로 이동
+            if(!kFindAndMoveToDirectory(pstCurrentDirectory, pdwParentDirectoryClusterIndex, vcTmpSub)){
+                kPrintf("No such directory.\n", vcTmpSub);
+                kMemCpy(path, vcTmpPath, kStrLen(vcTmpPath) + 1);
+                return;
+            }
+
+            // 서브디렉토리 이름을 저장할 버퍼를 비움
+            iTmp = 0;
+            vcTmpSub[iTmp] = '\0';
+        }
+        else{
+            vcTmpSub[iTmp++] = cLetter;
+            vcTmpSub[iTmp] = '\0';
+        }
+    }
+}
+
+/**
+ * 현재 디렉토리 내에서 이동할 디렉토리 엔트리를 찾음
+ */
+static BOOL kFindAndMoveToDirectory(DIRECTORYENTRY* pstCurrentDirectory, DWORD* pdwParentDirectoryClusterIndex, char* vcFileName){
+    int i;
+    
+    // 입력한 디렉토리 이름과 같은 디렉토리를 찾음
+    for(i = 0; i < FILESYSTEM_MAXDIRECTORYENTRYCOUNT; i++){
+        if(kStrLen(pstCurrentDirectory[i].vcFileName) == kStrLen(vcFileName) && kMemCmp(pstCurrentDirectory[i].vcFileName, vcFileName, 
+                                                                        kStrLen(vcFileName) + 1) == 0){
+
+            if(i != 0 && i != 1){
+                char *vcTempName = "admin";
+                if(kMemCmp(exUserName, vcTempName, 6)){
+                    // 루트디렉토리인 경우 권한 검사
+                    if(currentDirectoryClusterIndex == 0){
+                        if((kStrLen(exUserName) == kStrLen(pstCurrentDirectory[i].vcFileName) && 
+                            kMemCmp(exUserName, pstCurrentDirectory[i].vcFileName, kStrLen(exUserName)) == 0) || i == 3);
+                        else{
+                            kPrintf("you are not allowed to access this folder\n");
+                            return TRUE;
+                        }
+                    }
+                    else{
+                        if ( (kGetUserLevel(exUserName) > pstCurrentDirectory[i].objectLevel))
+                        {
+                            kPrintf("you are not allowed to access this folder\n");
+                            return TRUE;
+                        }
+                    }
+                }
+            }
+
+            // 디렉토리 이동
+            currentDirectoryClusterIndex = pstCurrentDirectory[i].dwStartClusterIndex;
+            kSetClusterIndex(currentDirectoryClusterIndex);
+            pstCurrentDirectory = NULL;
+            pstCurrentDirectory = kFindDirectory(currentDirectoryClusterIndex);
+
+            // 경로 설정
+            kChangePath(i, vcFileName, *pdwParentDirectoryClusterIndex);
+            *pdwParentDirectoryClusterIndex = currentDirectoryClusterIndex;
+
+            return TRUE;
+        }
+    }
+    // 이동할 디렉토리를 찾지 못함
+    return FALSE;
+}
+
+/**
+ * 프롬프트에 출력되는 경로를 변경
+ */
 static void kChangePath(int i, char* vcDirectoryName, DWORD dwParentDirectoryClusterIndex){
     char vcTempPath[100];
     char vcTemp[2];
@@ -2978,8 +3001,14 @@ static void kChangePath(int i, char* vcDirectoryName, DWORD dwParentDirectoryClu
     iLenPath = kStrLen(vcTempPath);
     iLenSubDirectoryName = kStrLen(vcDirectoryName);
 
+    // 루트 디렉토리로 강제 이동
+    if(i == -1){
+        path[0] = '/';
+        path[1] = '\0';
+        return;
+    }
     // 상위 디렉토리로 이동
-    if(i == 1){
+    else if(i == 1){
         for(j = iLenPath - 1; j > 0; j--){
             if(vcTempPath[j] == '/'){
                 j = 0;
@@ -3003,11 +3032,6 @@ static void kChangePath(int i, char* vcDirectoryName, DWORD dwParentDirectoryClu
     }
 
     kMemCpy(path, vcTempPath, kStrLen(vcTempPath) + 1);
-    // 루트 디렉토리라면 / 추가
-    if(currentDirectoryClusterIndex == 0){
-        vcTemp[0] = '/';
-        kMemCpy(path, vcTemp, 2);
-    }
 }
 
 static void kChangeCacheState(){

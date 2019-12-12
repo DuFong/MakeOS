@@ -16,7 +16,7 @@ fReadHDDInformation gs_pfReadHDDInformation = NULL;
 fReadHDDSector gs_pfReadHDDSector = NULL;
 fWriteHDDSector gs_pfWriteHDDSector = NULL;
 
-char prompt_path[100];
+//char prompt_path[100];
 DWORD currentClusterIndex = 0;
 extern char exUserName[FILESYSTEM_MAXUSERNAMELENGTH];
 
@@ -276,8 +276,7 @@ void kSetDotInDirectory(DWORD myClusterIndex){
     DIRECTORYENTRY stEntry;
     int iDirectoryEntryOffset = 0;
     DWORD parentClusterIndex = currentClusterIndex;
-    // for Dubugging
-    //kPrintf("\n current=%d, mycluster=%d \n", currentClusterIndex,myClusterIndex);
+
     currentClusterIndex = myClusterIndex;
 
     // 디렉터리 엔트리를 설정
@@ -286,8 +285,6 @@ void kSetDotInDirectory(DWORD myClusterIndex){
     stEntry.dwFileSize = 0;
     stEntry.flag=1;
     stEntry.ParentDirectoryCluserIndex = parentClusterIndex;
-    stEntry.ParentDirectoryPath[0] = '/';
-    stEntry.ParentDirectoryPath[1] = '\0';
     stEntry.objectLevel = 10;
     
     
@@ -305,8 +302,6 @@ void kSetDotInDirectory(DWORD myClusterIndex){
     stEntry.dwFileSize = 0;
     stEntry.flag=1;
     stEntry.ParentDirectoryCluserIndex = parentClusterIndex;
-    stEntry.ParentDirectoryPath[0] = '/';
-    stEntry.ParentDirectoryPath[1] = '\0';
     stEntry.objectLevel = 10;
    
     
@@ -1091,8 +1086,6 @@ static BOOL kCreateDirectory( const char* pcFileName, DIRECTORYENTRY* pstEntry,
     pstEntry->dwStartClusterIndex = dwCluster;
     pstEntry->dwFileSize = 0;
     pstEntry->flag=1;
-    pstEntry->ParentDirectoryPath[0] = '/';
-    pstEntry->ParentDirectoryPath[1] = '\0';
     pstEntry->ParentDirectoryCluserIndex = currentClusterIndex;
    
     // exUserName을 이용해 user의 level 읽기
@@ -1132,42 +1125,6 @@ static BOOL kCreateDirectory( const char* pcFileName, DIRECTORYENTRY* pstEntry,
 
     return TRUE;
 }
-
-/**
- *  디렉토리를 업데이트
- */
-BOOL kUpdateDirectory( int piDirectoryEntryIndex,const char* fileName,const char* parentPath, int parentIndex )
-{
-    DWORD dwCluster;
-    //DIRECTORYENTRY* psEntry;
-    
-    DIRECTORYENTRY stEntry;
-    int iDirectoryEntryOffset = piDirectoryEntryIndex;
-
-    // 디렉터리 엔트리를 설정
-    kMemCpy( stEntry.vcFileName, fileName, kStrLen(fileName)+1 );
-    stEntry.dwStartClusterIndex = -1;
-    stEntry.dwFileSize = 0;
-    stEntry.flag=1;
-    stEntry.ParentDirectoryCluserIndex = parentIndex;
-    kMemCpy(stEntry.ParentDirectoryPath,parentPath,kStrLen(parentPath)+1);
-    
-    
-    // 디렉터리 엔트리를 등록
-    if( kSetDirectoryEntryData( iDirectoryEntryOffset, &stEntry ) == FALSE )
-    {
-        
-        return FALSE;
-    }
-
-   
-
-  
-   
-    return TRUE;
-}
-
-
 
 /**
  *  파라미터로 넘어온 클러스터부터 파일의 끝까지 연결된 클러스터를 모두 반환

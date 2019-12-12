@@ -149,7 +149,6 @@ typedef struct kDirectoryEntryStruct
     DWORD dwStartClusterIndex;
 
     //부모 디렉터리 표시
-    char ParentDirectoryPath[FILESYSTEM_MAXFILENAMELENGTH];
     DWORD ParentDirectoryCluserIndex;
 
     // 파일 또는 디렉토리의 권한(level)
@@ -306,7 +305,6 @@ static BOOL kCreateDirectory( const char* pcFileName, DIRECTORYENTRY* pstEntry,
  DIRECTORYENTRY* kFindDirectory( DWORD currentCluster );      //
  void kSetDotInDirectory();
  void kSetClusterIndex(DWORD currentDirectoryClusterIndex);
- BOOL kUpdateDirectory( int piDirectoryEntryIndex,const char* fileName,const char* parentPath, int parentIndex );
  BOOL kCheckLoginState( char * userName, char * password, DWORD * currentDirectoryClusterIndex );
  BOOL kCreateLoginFile();
  BOOL kWriteLoginEntryData( const char* newUserName, const char* newPassword );
