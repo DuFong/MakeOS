@@ -284,7 +284,7 @@ void kMakeDotDirectory(DWORD myClusterIndex){
     stEntry.dwStartClusterIndex = myClusterIndex;
     stEntry.dwFileSize = 0;
     stEntry.flag=1;
-    stEntry.ParentDirectoryCluserIndex = parentClusterIndex;
+    stEntry.dwParentDirectoryClusterIndex = parentClusterIndex;
     stEntry.objectLevel = 10;
     
     
@@ -301,7 +301,7 @@ void kMakeDotDirectory(DWORD myClusterIndex){
     stEntry.dwStartClusterIndex = parentClusterIndex;
     stEntry.dwFileSize = 0;
     stEntry.flag=1;
-    stEntry.ParentDirectoryCluserIndex = parentClusterIndex;
+    stEntry.dwParentDirectoryClusterIndex = parentClusterIndex;
     stEntry.objectLevel = 10;
    
     
@@ -1085,8 +1085,8 @@ static BOOL kCreateDirectory( const char* pcFileName, DIRECTORYENTRY* pstEntry,
     kMemCpy( pstEntry->vcFileName, pcFileName, kStrLen( pcFileName ) + 1 );
     pstEntry->dwStartClusterIndex = dwCluster;
     pstEntry->dwFileSize = 0;
-    pstEntry->flag=1;
-    pstEntry->ParentDirectoryCluserIndex = currentClusterIndex;
+    pstEntry->flag = 1;
+    pstEntry->dwParentDirectoryClusterIndex = currentClusterIndex;
    
     // exUserName을 이용해 user의 level 읽기
     BOOL levelSet = FALSE;
