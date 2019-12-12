@@ -2340,13 +2340,7 @@ BOOL kSetLoginEntryData( int iIndex, LOGINENTRY* pstEntry )
 BOOL kChangePassword(char* user, char* inputpasswd){
     LOGINENTRY* loginEntry;
     int passLength, nameLength;
-    char vcPassword[FILESYSTEM_MAXPASSWORDLENGTH];
-    
-    // 파일 시스템을 인식하지 못했거나 인덱스가 올바르지 않으면 실패
-    if( ( gs_stFileSystemManager.bMounted == FALSE ) )
-    {
-        return FALSE;
-    }
+    char vcNewPassword[FILESYSTEM_MAXPASSWORDLENGTH];
 
     //  LoginFile를 읽음
     if( kReadCluster( LOGIN_CLUSTER_NUM, gs_vbTempBuffer ) == FALSE )
@@ -2367,16 +2361,20 @@ BOOL kChangePassword(char* user, char* inputpasswd){
             if( kStrLen(loginEntry[i].password) == passLength && kMemCmp(loginEntry[ i ].password, inputpasswd, passLength ) == 0 ){
                 // 비밀번호 변경하고 다시 저장
                 kPrintf("Enter your NEW password: ");
-                kScanf(vcPassword, FALSE);
-                kMemCpy(loginEntry[i].password, vcPassword, kStrLen(vcPassword));
-                if( kWriteCluster( LOGIN_CLUSTER_NUM, loginEntry ) == FALSE ){
-                    return FALSE;
-                }
-                return TRUE;
+                kScanf(vcNewPassword, FALSE);
+                kMemCpy(loginEntry[i].password, vcNewPassword, kStrLen(vcNewPassword));
+                break;
+            }
+            else{
+                kPrintf("Wrong Passward !!\n");
+                return FALSE;
             }
         }
     }
-    return FALSE;
+    if( kWriteCluster( LOGIN_CLUSTER_NUM, loginEntry ) == FALSE ){
+        return FALSE;
+    }
+    return TRUE;
 }
 
 LOGINENTRY* kReadLogin(){
@@ -2422,20 +2420,24 @@ void kChangeAdminLevel(char* vcID ){
     DIR* pstDirectory;
     int i, iCount, iTotalCount;
     DIRECTORYENTRY* pstEntry;
-
-    kReadCluster(currentClusterIndex, gs_vbTempBuffer);
-    pstEntry = (DIRECTORYENTRY*) gs_vbTempBuffer;
-
     int nameLength = kStrLen(vcID);
-    for( int i = 0 ; i < FILESYSTEM_MAXDIRECTORYENTRYCOUNT ; i++ )
-    {
-        if(kMemCmp( pstEntry[ i ].vcFileName, vcID, MAX(kStrLen(pstEntry[ i ].vcFileName), nameLength) ) == 0 ){
-            pstEntry[ i ].objectLevel = AUTH_LEVEL_MEDIUM;
-            break;
+    FILESYSTEMMANAGER stManager;
+    
+    kGetFileSystemInformation( &stManager );
+
+    for(int j = 0; j < stManager.dwTotalClusterCount; j++){
+        pstEntry = kFindDirectory(j);
+        for( int i = 0 ; i < FILESYSTEM_MAXDIRECTORYENTRYCOUNT ; i++ )
+        {
+            if(kMemCmp( pstEntry[ i ].vcFileName, vcID, MAX(kStrLen(pstEntry[ i ].vcFileName), nameLength) ) == 0 ){
+                pstEntry[ i ].objectLevel = AUTH_LEVEL_MEDIUM;
+                break;
+            }
         }
+        // 현재 디렉터리에 씀
+        kWriteCluster( j, pstEntry );
+        break;
     }
-    // 현재 디렉터리에 씀
-    kWriteCluster( currentClusterIndex, gs_vbTempBuffer );
 }
 
 void kChangeCacheEnable(){
