@@ -303,7 +303,7 @@ static BOOL kUpdateDirectoryEntry( FILEHANDLE* pstFileHandle );
 static BOOL kCreateDirectory( const char* pcFileName, DIRECTORYENTRY* pstEntry, 
         int* piDirectoryEntryIndex );               //
  DIRECTORYENTRY* kFindDirectory( DWORD currentCluster );      //
- void kSetDotInDirectory();
+ void kMakeDotDirectory();
  void kSetClusterIndex(DWORD currentDirectoryClusterIndex);
  BOOL kCheckLoginState( char * userName, char * password, DWORD * currentDirectoryClusterIndex );
  BOOL kCreateLoginFile();

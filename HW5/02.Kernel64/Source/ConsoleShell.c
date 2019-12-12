@@ -1774,7 +1774,7 @@ static void kFormatHDD( const char* pcParameterBuffer )
     kPrintf( "HDD Format Success. After 3sec, System will reboot\n" );
     currentDirectoryClusterIndex = 0;
     kSetClusterIndex(currentDirectoryClusterIndex);
-    kSetDotInDirectory(0);
+    kMakeDotDirectory(ROOTDIRECTORY_CLUSTER_NUM);
     kSleep(3000);
     kShutdown(NULL);
 }

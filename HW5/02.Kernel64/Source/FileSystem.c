@@ -272,7 +272,7 @@ BOOL kFormat( void )
 /** 
  * 디렉토리의 dot, dot dot 생성
  */
-void kSetDotInDirectory(DWORD myClusterIndex){
+void kMakeDotDirectory(DWORD myClusterIndex){
     DIRECTORYENTRY stEntry;
     int iDirectoryEntryOffset = 0;
     DWORD parentClusterIndex = currentClusterIndex;
@@ -1121,7 +1121,7 @@ static BOOL kCreateDirectory( const char* pcFileName, DIRECTORYENTRY* pstEntry,
         return FALSE;
     }
 
-    kSetDotInDirectory(dwCluster);
+    kMakeDotDirectory(dwCluster);
 
     return TRUE;
 }
