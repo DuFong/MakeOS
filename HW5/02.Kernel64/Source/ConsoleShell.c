@@ -2713,11 +2713,10 @@ static void kShowDirectory( const char* pcParameterBuffer )
      
     for( i = 0 ; i < FILESYSTEM_MAXDIRECTORYENTRYCOUNT ; i++ )
     {
-        //kPrintf("index: %d, cluster: %d\n", i, pstEntry->dwStartClusterIndex);
+        pstEntry = &pstCurrentDirectory[i];
         if( pstCurrentDirectory[ i ].dwStartClusterIndex != 0 || 
             kMemCmp(pstCurrentDirectory[i].vcFileName, ".",2)==0 || kMemCmp(pstCurrentDirectory[i].vcFileName, "..",3)==0 )
         {   
-            pstEntry = &pstCurrentDirectory[i]; 
             // 전부 공백으로 초기화 한 후 각 위치에 값을 대입
             kMemSet( vcBuffer, ' ', sizeof( vcBuffer ) - 1 );
             vcBuffer[ sizeof( vcBuffer ) - 1 ] = '\0';
@@ -2748,7 +2747,7 @@ static void kShowDirectory( const char* pcParameterBuffer )
 
                 //vcBuffer[kStrLen(vcBuffer) + 1] = '\0';
                 kPrintf( "    %s\n", vcBuffer );       
-            }     
+            }   
         }
     }   
 }

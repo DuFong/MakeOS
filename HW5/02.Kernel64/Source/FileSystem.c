@@ -2456,16 +2456,18 @@ void kChangeCacheEnable(){
 
 BOOL kIsDirectoryEmpty(DIRECTORYENTRY* pstEntry){
     int i;
-    DIRECTORYENTRY* pstSubDirectory;
+    DIRECTORYENTRY* pstDirectory;
+    DIRECTORYENTRY stSubDirectory;
+    FILESYSTEMMANAGER stManager;
 
-    //kPrintf("The directory's cluster index: %d, name: %s\n", pstEntry->dwStartClusterIndex, pstEntry->vcFileName);
+    pstDirectory = kFindDirectory(pstEntry->dwStartClusterIndex);
+
     for( i = 2 ; i < FILESYSTEM_MAXDIRECTORYENTRYCOUNT ; i++ )
     {
-        pstSubDirectory = &pstEntry[i];
-        if( pstSubDirectory->dwStartClusterIndex != 0 )
+        stSubDirectory = pstDirectory[i];
+        // 디렉토리가 비어있지 않음
+        if( stSubDirectory.dwStartClusterIndex != 0 )
         {
-            kPrintf("%d\n", i);
-            kPrintf("%d\n", pstSubDirectory->dwStartClusterIndex);
             return FALSE;
         }
     }
