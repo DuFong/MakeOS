@@ -292,6 +292,7 @@ void kRewindDirectory( DIR* pstDirectory );
 int kCloseDirectory( DIR* pstDirectory );
 BOOL kWriteZero( FILE* pstFile, DWORD dwCount );
 BOOL kIsFileOpened( const DIRECTORYENTRY* pstEntry );
+BOOL kIsDirectoryEmpty(DIRECTORYENTRY* pstEntry);
 
 
 static void* kAllocateFileDirectoryHandle( void );
@@ -303,7 +304,7 @@ static BOOL kUpdateDirectoryEntry( FILEHANDLE* pstFileHandle );
 static BOOL kCreateDirectory( const char* pcFileName, DIRECTORYENTRY* pstEntry, 
         int* piDirectoryEntryIndex );               //
  DIRECTORYENTRY* kFindDirectory( DWORD currentCluster );      //
- void kMakeDotDirectory();
+ void kMakeDotDirectory(DWORD dwCurrentDirectoryClusterIndex);
  void kSetClusterIndex(DWORD currentDirectoryClusterIndex);
  BOOL kCheckLoginState( char * userName, char * password, DWORD * currentDirectoryClusterIndex );
  BOOL kCreateLoginFile();

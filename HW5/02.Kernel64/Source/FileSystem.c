@@ -272,42 +272,36 @@ BOOL kFormat( void )
 /** 
  * 디렉토리의 dot, dot dot 생성
  */
-void kMakeDotDirectory(DWORD myClusterIndex){
+void kMakeDotDirectory(DWORD dwCurrentDirectoryClusterIndex){
     DIRECTORYENTRY stEntry;
-    int iDirectoryEntryOffset = 0;
     DWORD parentClusterIndex = currentClusterIndex;
 
-    currentClusterIndex = myClusterIndex;
+    currentClusterIndex = dwCurrentDirectoryClusterIndex;
 
     // 디렉터리 엔트리를 설정
     kMemCpy( stEntry.vcFileName, ".", 2 );
-    stEntry.dwStartClusterIndex = myClusterIndex;
+    stEntry.dwStartClusterIndex = dwCurrentDirectoryClusterIndex;
     stEntry.dwFileSize = 0;
-    stEntry.flag=1;
+    stEntry.flag = 1;
     stEntry.dwParentDirectoryClusterIndex = parentClusterIndex;
     stEntry.objectLevel = 10;
     
-    
     // 디렉터리 엔트리를 등록
-    if( kSetDirectoryEntryData( iDirectoryEntryOffset, &stEntry ) == FALSE )
-    {
-        
+    if( kSetDirectoryEntryData( 0, &stEntry ) == FALSE )
+    {       
         return FALSE;
     }
-
 
      // 디렉터리 엔트리를 설정
     kMemCpy( stEntry.vcFileName, "..", 3 );
     stEntry.dwStartClusterIndex = parentClusterIndex;
     stEntry.dwFileSize = 0;
-    stEntry.flag=1;
+    stEntry.flag = 1;
     stEntry.dwParentDirectoryClusterIndex = parentClusterIndex;
     stEntry.objectLevel = 10;
-   
     
-    iDirectoryEntryOffset = 1;
     // 디렉터리 엔트리를 등록
-    if( kSetDirectoryEntryData( iDirectoryEntryOffset, &stEntry ) == FALSE )
+    if( kSetDirectoryEntryData( 1, &stEntry ) == FALSE )
     {
         return FALSE;
     }
@@ -1835,7 +1829,7 @@ int kRemoveFile( const char* pcFileName )
     { 
         // 동기화
         kUnlock( &( gs_stFileSystemManager.stMutex ) );
-        return -1;
+        return -3;
     }
     
     // 다른 태스크에서 해당 파일을 열고 있는지 핸들 풀을 검색하여 확인
@@ -1845,6 +1839,14 @@ int kRemoveFile( const char* pcFileName )
         // 동기화
         kUnlock( &( gs_stFileSystemManager.stMutex ) );
         return -1;
+    }
+
+    // 디렉토리가 비어있지 않으면 삭제 불가능
+    if(stEntry.flag == 1 && !kIsDirectoryEmpty(&stEntry)){
+        // 동기화
+        //kPrintf("%d\n", kIsDirectoryEmpty(&stEntry));
+        kUnlock( &( gs_stFileSystemManager.stMutex ) );
+        return -4;
     }
     
     // 파일을 구성하는 클러스터를 모두 해제
@@ -2450,4 +2452,22 @@ void kChangeCacheEnable(){
         gs_stFileSystemManager.bCacheEnable = FALSE;
         kPrintf("'.' is not found.\n");
     }
+}
+
+BOOL kIsDirectoryEmpty(DIRECTORYENTRY* pstEntry){
+    int i;
+    DIRECTORYENTRY* pstSubDirectory;
+
+    //kPrintf("The directory's cluster index: %d, name: %s\n", pstEntry->dwStartClusterIndex, pstEntry->vcFileName);
+    for( i = 2 ; i < FILESYSTEM_MAXDIRECTORYENTRYCOUNT ; i++ )
+    {
+        pstSubDirectory = &pstEntry[i];
+        if( pstSubDirectory->dwStartClusterIndex != 0 )
+        {
+            kPrintf("%d\n", i);
+            kPrintf("%d\n", pstSubDirectory->dwStartClusterIndex);
+            return FALSE;
+        }
+    }
+    return TRUE;
 }

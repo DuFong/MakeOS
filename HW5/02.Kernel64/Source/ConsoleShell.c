@@ -2643,12 +2643,12 @@ static void kChangeDirectory( const char* pcParamegerBuffer){
 
     /* 절대 경로로 이동 */
     if(vcFileName[0] == '/'){
-        kMoveDirectoryByParameter(pstCurrentDirectory, ROOTDIRECTORY_CLUSTER_NUM, vcFileName, iLength, TRUE);
+        kMoveDirectory(pstCurrentDirectory, ROOTDIRECTORY_CLUSTER_NUM, vcFileName, iLength, TRUE);
         return;
     }
     
     /* 상대 경로로 이동 */
-    kMoveDirectoryByParameter(pstCurrentDirectory, currentDirectoryClusterIndex, vcFileName, iLength, FALSE);
+    kMoveDirectory(pstCurrentDirectory, currentDirectoryClusterIndex, vcFileName, iLength, FALSE);
 }
 
 /**
@@ -2673,9 +2673,18 @@ static void kRemoveDirectory( const char* pcParameterBuffer ){
     if(res == -2){
         return;
     }
-    else if( res != 0 ){
-        kPrintf("No such directory.\n");
-        return ;
+    else if(res != 0){
+        kPrintf("Failed to remove directory");
+        if(res == -3){
+            kPrintf(": No such directory.\n");
+        }
+        else if(res == -4){
+            kPrintf(": Directory not empty\n");
+        }
+        else{
+            kPrintf("\n");
+        }
+        return;
     }
     
     kPrintf( "Directory remove success.\n" );
@@ -2704,10 +2713,11 @@ static void kShowDirectory( const char* pcParameterBuffer )
      
     for( i = 0 ; i < FILESYSTEM_MAXDIRECTORYENTRYCOUNT ; i++ )
     {
+        //kPrintf("index: %d, cluster: %d\n", i, pstEntry->dwStartClusterIndex);
         if( pstCurrentDirectory[ i ].dwStartClusterIndex != 0 || 
             kMemCmp(pstCurrentDirectory[i].vcFileName, ".",2)==0 || kMemCmp(pstCurrentDirectory[i].vcFileName, "..",3)==0 )
-        {    
-            pstEntry = &pstCurrentDirectory[i];
+        {   
+            pstEntry = &pstCurrentDirectory[i]; 
             // 전부 공백으로 초기화 한 후 각 위치에 값을 대입
             kMemSet( vcBuffer, ' ', sizeof( vcBuffer ) - 1 );
             vcBuffer[ sizeof( vcBuffer ) - 1 ] = '\0';
@@ -2874,7 +2884,7 @@ static BOOL kChangeLevel( const char* pcParameterBuffer ){
 /**
  * 절대경로, 상대경로를 구분하여 디렉토리 이동 시작
  */
-static void kMoveDirectoryByParameter(DIRECTORYENTRY* pstCurrentDirectory, DWORD dwMoveStartClusterIndex, 
+static void kMoveDirectory(DIRECTORYENTRY* pstCurrentDirectory, DWORD dwMoveStartClusterIndex, 
                                                         char* vcFileName, int iLength, BOOL bIsAbsolutePath){
     DWORD* pdwParentDirectoryClusterIndex;
     int iTmp, i;
@@ -2939,8 +2949,8 @@ static BOOL kFindAndMoveToDirectory(DIRECTORYENTRY* pstCurrentDirectory, DWORD* 
     
     // 입력한 디렉토리 이름과 같은 디렉토리를 찾음
     for(i = 0; i < FILESYSTEM_MAXDIRECTORYENTRYCOUNT; i++){
-        if(kStrLen(pstCurrentDirectory[i].vcFileName) == kStrLen(vcFileName) && kMemCmp(pstCurrentDirectory[i].vcFileName, vcFileName, 
-                                                                        kStrLen(vcFileName) + 1) == 0){
+        if(kStrLen(pstCurrentDirectory[i].vcFileName) == kStrLen(vcFileName) 
+                && kMemCmp(pstCurrentDirectory[i].vcFileName, vcFileName, kStrLen(vcFileName) + 1) == 0){
 
             if(i != 0 && i != 1){
                 char *vcTempName = "admin";
