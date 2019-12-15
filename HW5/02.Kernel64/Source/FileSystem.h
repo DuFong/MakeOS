@@ -153,6 +153,8 @@ typedef struct kDirectoryEntryStruct
 
     // 파일 또는 디렉토리의 권한(level)
     int objectLevel;
+
+    char createTime[100];
 } DIRECTORYENTRY;
 
 // Login Entry Structure
@@ -315,5 +317,6 @@ BOOL kChangePassword(char* userName, char* inputpasswd);
 LOGINENTRY* kReadLogin(void);
 static BOOL kChangeLevel( const char* pcParameterBuffer);
 void kChangeCacheEnable();
+void kGetCurrentTime(char * pbBuffer);
 
 #endif /*__FILESYSTEM_H__*/

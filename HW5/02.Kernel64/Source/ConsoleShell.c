@@ -2734,7 +2734,7 @@ static void kShowDirectory( const char* pcParameterBuffer )
                 kSPrintf( vcTempValue, "0x%X Cluster", pstEntry->dwStartClusterIndex );
                 kMemCpy( vcBuffer + 30, vcTempValue, kStrLen( vcTempValue ) + 1 );
 
-                kPrintf( "    %s\t(level %d)\n", vcBuffer, pstEntry->objectLevel );
+                kPrintf( "    %s\t%s\n", vcBuffer, pstEntry->createTime );
             }
             else if(pstEntry->flag == 1)
             {
@@ -2746,7 +2746,7 @@ static void kShowDirectory( const char* pcParameterBuffer )
                 kMemCpy( vcBuffer + 20, vcTempValue, kStrLen( vcTempValue ) +1);
 
                 //vcBuffer[kStrLen(vcBuffer) + 1] = '\0';
-                kPrintf( "    %s\n", vcBuffer );       
+                kPrintf( "    %s\t%s\n", vcBuffer, pstEntry->createTime );       
             }   
         }
     }   

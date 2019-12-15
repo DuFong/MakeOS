@@ -37,6 +37,12 @@ void kReadRTCDate(WORD* pwYear, BYTE* pbMonth, BYTE* pbDayOfMonth, BYTE* pbDayOf
     kOutPortByte(RTC_CMOSADDRESS, RTC_ADDRESS_MONTH);
     // CMOS 데이터 레지스터에서 월을 읽음
     bData = kInPortByte(RTC_CMOSDATA);
+    *pbMonth = RTC_BCDTOBINARY(bData);
+
+    // CMOS 메모리 어드레스 레지스터에 일을 저장하는 레지스터 지정
+    kOutPortByte(RTC_CMOSADDRESS, RTC_ADDRESS_DAYOFMONTH);
+    // CMOS 데이터 레지스터에서 일을 읽음
+    bData = kInPortByte(RTC_CMOSDATA);
     *pbDayOfMonth = RTC_BCDTOBINARY(bData);
 
     // CMOS 메모리 어드레스 레지스터에 요일을 저장하는 레지스터 지정

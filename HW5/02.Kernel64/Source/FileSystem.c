@@ -285,6 +285,7 @@ void kMakeDotDirectory(DWORD dwCurrentDirectoryClusterIndex){
     stEntry.flag = 1;
     stEntry.dwParentDirectoryClusterIndex = parentClusterIndex;
     stEntry.objectLevel = 10;
+    kGetCurrentTime(stEntry.createTime);
     
     // 디렉터리 엔트리를 등록
     if( kSetDirectoryEntryData( 0, &stEntry ) == FALSE )
@@ -299,6 +300,7 @@ void kMakeDotDirectory(DWORD dwCurrentDirectoryClusterIndex){
     stEntry.flag = 1;
     stEntry.dwParentDirectoryClusterIndex = parentClusterIndex;
     stEntry.objectLevel = 10;
+    kGetCurrentTime(stEntry.createTime);
     
     // 디렉터리 엔트리를 등록
     if( kSetDirectoryEntryData( 1, &stEntry ) == FALSE )
@@ -1028,6 +1030,7 @@ static BOOL kCreateFile( const char* pcFileName, DIRECTORYENTRY* pstEntry,
     pstEntry->dwStartClusterIndex = dwCluster;
     pstEntry->dwFileSize = 0;
     pstEntry->flag = 0;
+    kGetCurrentTime(pstEntry->createTime);
 
     // exUserName을 이용해 user의 level 읽기
     LOGINENTRY* pstLoginEntry = kReadLogin();
@@ -1081,6 +1084,7 @@ static BOOL kCreateDirectory( const char* pcFileName, DIRECTORYENTRY* pstEntry,
     pstEntry->dwFileSize = 0;
     pstEntry->flag = 1;
     pstEntry->dwParentDirectoryClusterIndex = currentClusterIndex;
+    kGetCurrentTime(pstEntry->createTime);
    
     // exUserName을 이용해 user의 level 읽기
     BOOL levelSet = FALSE;
@@ -2472,4 +2476,46 @@ BOOL kIsDirectoryEmpty(DIRECTORYENTRY* pstEntry){
         }
     }
     return TRUE;
+}
+
+void kGetCurrentTime(char * pbBuffer){
+    BYTE bSecond, bMinute, bHour;
+    BYTE bDayOfWeek, bDayOfMonth, bMonth;
+    WORD wYear;
+    
+    int bufferIndex = 0;
+
+    // RTC 컨트롤러에서 시간 및 일자를 읽음
+    kReadRTCTime(&bHour, &bMinute, &bSecond);
+    kReadRTCDate(&wYear, &bMonth, &bDayOfMonth, &bDayOfWeek);
+
+    bufferIndex +=  kIToA(wYear, pbBuffer + bufferIndex, 10);
+
+    pbBuffer[bufferIndex] = '-';
+    bufferIndex++;
+
+    bufferIndex +=  kIToA(bMonth, pbBuffer + bufferIndex, 10);
+
+    pbBuffer[bufferIndex] = '-';
+    bufferIndex++;
+
+    bufferIndex +=  kIToA(bDayOfMonth, pbBuffer + bufferIndex, 10);
+
+    pbBuffer[bufferIndex] = ' ';
+    bufferIndex++;
+
+    bufferIndex +=  kIToA(bHour, pbBuffer + bufferIndex, 10);
+
+    pbBuffer[bufferIndex] = ':';
+    bufferIndex++;
+
+    bufferIndex +=  kIToA(bMinute, pbBuffer + bufferIndex, 10);
+
+    pbBuffer[bufferIndex] = ':';
+    bufferIndex++;
+
+    bufferIndex +=  kIToA(bSecond, pbBuffer + bufferIndex, 10);
+
+    return;
+
 }
